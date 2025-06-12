@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flowmodoro Timer</title>
+    <title>Pomodoro Timer</title>
     <style>
         * {
             margin: 0;
@@ -97,6 +97,13 @@
             margin-bottom: 15px;
             font-size: 1.1rem;
         }
+        
+        .setting-control-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
 
         .time-input {
             display: flex;
@@ -104,6 +111,7 @@
             justify-content: center;
             gap: 10px;
             margin: 10px 0;
+            flex-grow: 1;
         }
 
         input[type="range"] {
@@ -162,6 +170,23 @@
 
         button:active {
             transform: translateY(0);
+        }
+        
+        .save-btn {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            font-weight: normal;
+            border-radius: 20px;
+            margin: 0;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.15);
+            border-width: 1px;
+        }
+        
+        .save-btn:hover {
+             background: rgba(255, 255, 255, 0.25);
+             transform: translateY(-1px);
+             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
         .start-btn {
@@ -228,7 +253,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🍅 Flowmodoro Timer</h1>
+        <h1>🍅 Pomodoro Timer</h1>
         
         <div class="session-type" id="sessionType">Study Session</div>
         <div class="timer-display" id="timerDisplay">25:00</div>
@@ -245,16 +270,22 @@
         <div class="settings">
             <div class="setting-group">
                 <h3>Study Time</h3>
-                <div class="time-input">
-                    <input type="range" id="studySlider" min="1" max="60" value="25" oninput="updateStudyTime()">
-                    <span class="time-value" id="studyValue">25min</span>
+                <div class="setting-control-wrapper">
+                    <div class="time-input">
+                        <input type="range" id="studySlider" min="1" max="60" value="25" oninput="updateStudyTime()">
+                        <span class="time-value" id="studyValue">25min</span>
+                    </div>
+                    <button id="saveStudyBtn" class="save-btn" onclick="saveDefault('study')">Save</button>
                 </div>
             </div>
             <div class="setting-group">
                 <h3>Break Time</h3>
-                <div class="time-input">
-                    <input type="range" id="breakSlider" min="1" max="15" value="5" oninput="updateBreakTime()">
-                    <span class="time-value" id="breakValue">5min</span>
+                 <div class="setting-control-wrapper">
+                    <div class="time-input">
+                        <input type="range" id="breakSlider" min="1" max="15" value="5" oninput="updateBreakTime()">
+                        <span class="time-value" id="breakValue">5min</span>
+                    </div>
+                     <button id="saveBreakBtn" class="save-btn" onclick="saveDefault('break')">Save</button>
                 </div>
             </div>
         </div>
@@ -270,16 +301,47 @@
         let timer = null;
         let isRunning = false;
         let isStudySession = true;
-        let timeLeft = 25 * 60; // 25 minutes in seconds
-        let studyDuration = 25 * 60;
-        let breakDuration = 5 * 60;
-        let totalTimeForSession = studyDuration;
+        let timeLeft;
+        let studyDuration;
+        let breakDuration;
+        let totalTimeForSession;
         let completedSessions = 0;
         let totalStudyTime = 0;
 
-        // Audio contexts for different sounds
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         
+        function loadDefaultsAndInit() {
+            const defaultStudy = localStorage.getItem('defaultStudyTime') || 25;
+            const defaultBreak = localStorage.getItem('defaultBreakTime') || 5;
+
+            document.getElementById('studySlider').value = defaultStudy;
+            document.getElementById('studyValue').textContent = `${defaultStudy}min`;
+
+            document.getElementById('breakSlider').value = defaultBreak;
+            document.getElementById('breakValue').textContent = `${defaultBreak}min`;
+
+            studyDuration = defaultStudy * 60;
+            breakDuration = defaultBreak * 60;
+            timeLeft = studyDuration;
+            totalTimeForSession = studyDuration;
+
+            updateDisplay();
+        }
+
+        function saveDefault(type) {
+            const isStudy = type === 'study';
+            const sliderId = isStudy ? 'studySlider' : 'breakSlider';
+            const storageKey = isStudy ? 'defaultStudyTime' : 'defaultBreakTime';
+            const buttonId = isStudy ? 'saveStudyBtn' : 'saveBreakBtn';
+
+            const value = document.getElementById(sliderId).value;
+            localStorage.setItem(storageKey, value);
+
+            const btn = document.getElementById(buttonId);
+            btn.textContent = 'Saved!';
+            setTimeout(() => { btn.textContent = 'Save'; }, 1500);
+        }
+
         function createBeep(frequency, duration, type = 'sine') {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -298,13 +360,11 @@
         }
 
         function playStudyEndSound() {
-            // Double beep for study end (going to break)
             createBeep(800, 0.2);
             setTimeout(() => createBeep(800, 0.2), 300);
         }
 
         function playBreakEndSound() {
-            // Triple ascending beep for break end (going to study)
             createBeep(600, 0.15);
             setTimeout(() => createBeep(700, 0.15), 200);
             setTimeout(() => createBeep(800, 0.2), 400);
@@ -332,7 +392,6 @@
                 timerDisplayEl.className = 'timer-display break-timer';
             }
             
-            // Update progress bar with different colors
             const progress = ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100;
             const progressFill = document.getElementById('progressFill');
             progressFill.style.width = `${progress}%`;
@@ -343,7 +402,6 @@
                 progressFill.style.background = 'linear-gradient(90deg, #4ecdc4, #7ed6cc)';
             }
             
-            // Update document title for notifications
             document.title = `${formatTime(timeLeft)} - ${isStudySession ? 'Study' : 'Break'} | Pomodoro Timer`;
         }
 
@@ -380,7 +438,6 @@
         }
 
         function startTimer() {
-            // Request audio context permission on first user interaction
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
             }
@@ -428,17 +485,14 @@
             isRunning = false;
             
             if (isStudySession) {
-                // Study session completed
                 playStudyEndSound();
                 completedSessions++;
                 totalStudyTime += Math.floor(studyDuration / 60);
                 
-                // Switch to break
                 isStudySession = false;
                 timeLeft = breakDuration;
                 totalTimeForSession = breakDuration;
                 
-                // Show notification
                 if (Notification.permission === 'granted') {
                     new Notification('Study session complete!', {
                         body: 'Time for a break! 🎉',
@@ -446,15 +500,12 @@
                     });
                 }
             } else {
-                // Break completed
                 playBreakEndSound();
                 
-                // Switch to study
                 isStudySession = true;
                 timeLeft = studyDuration;
                 totalTimeForSession = studyDuration;
                 
-                // Show notification
                 if (Notification.permission === 'granted') {
                     new Notification('Break time over!', {
                         body: 'Ready to focus again? 💪',
@@ -463,17 +514,14 @@
                 }
             }
             
-            // Update stats
             document.getElementById('completedSessions').textContent = completedSessions;
             document.getElementById('totalStudyTime').textContent = `${totalStudyTime}m`;
             
-            // Reset button state
             document.getElementById('startBtn').textContent = 'Start';
             document.getElementById('startBtn').className = 'start-btn';
             
             updateDisplay();
             
-            // Auto-start next session after 3 seconds
             setTimeout(() => {
                 if (!isRunning) {
                     startTimer();
@@ -481,15 +529,13 @@
             }, 3000);
         }
 
-        // Request notification permission
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
 
-        // Initialize display
-        updateDisplay();
+        // Initialize timer with defaults from localStorage
+        loadDefaultsAndInit();
         
-        // Prevent page refresh during active timer
         window.addEventListener('beforeunload', (e) => {
             if (isRunning) {
                 e.preventDefault();
