@@ -373,7 +373,7 @@
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
 
         function updateDisplay() {
@@ -392,7 +392,7 @@
                 timerDisplayEl.className = 'timer-display break-timer';
             }
             
-            const progress = ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100;
+            const progress = totalTimeForSession > 0 ? ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100 : 0;
             const progressFill = document.getElementById('progressFill');
             progressFill.style.width = `${progress}%`;
             
@@ -444,15 +444,17 @@
             
             isRunning = true;
             document.getElementById('startBtn').textContent = 'Pause';
-            document.getElementById('startBtn').className = 'pause-btn';
+            document.getElementById('startBtn').className = 'controls-btn pause-btn';
             
+            // **FIXED LOGIC HERE**
+            // This interval now checks the time *before* counting down.
             timer = setInterval(() => {
-                timeLeft--;
-                updateDisplay();
-                
                 if (timeLeft <= 0) {
                     completeSession();
+                    return;
                 }
+                timeLeft--;
+                updateDisplay();
             }, 1000);
         }
 
@@ -460,13 +462,14 @@
             isRunning = false;
             clearInterval(timer);
             document.getElementById('startBtn').textContent = 'Resume';
-            document.getElementById('startBtn').className = 'start-btn';
+            document.getElementById('startBtn').className = 'controls-btn start-btn';
         }
 
         function resetTimer() {
             isRunning = false;
             clearInterval(timer);
             
+            // When resetting, go back to the start of the CURRENT session type
             if (isStudySession) {
                 timeLeft = studyDuration;
                 totalTimeForSession = studyDuration;
@@ -476,7 +479,7 @@
             }
             
             document.getElementById('startBtn').textContent = 'Start';
-            document.getElementById('startBtn').className = 'start-btn';
+            document.getElementById('startBtn').className = 'controls-btn start-btn';
             updateDisplay();
         }
 
@@ -518,12 +521,16 @@
             document.getElementById('totalStudyTime').textContent = `${totalStudyTime}m`;
             
             document.getElementById('startBtn').textContent = 'Start';
-            document.getElementById('startBtn').className = 'start-btn';
+            document.getElementById('startBtn').className = 'controls-btn start-btn';
             
-            updateDisplay();
+            updateDisplay(); // Show the next session's time
             
+            // Auto-start the next session after a short pause
             setTimeout(() => {
-                startTimer();
+                // Safety check to ensure a timer doesn't start if user reset or paused
+                if (!isRunning) { 
+                    startTimer();
+                }
             }, 3000);
         }
 
@@ -535,12 +542,5 @@
         loadDefaultsAndInit();
         
         window.addEventListener('beforeunload', (e) => {
-            if (isRunning) {
-                e.preventDefault();
-                e.returnValue = 'Timer is running. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        });
-    </script>
-</body>
-</html>
+            if (isRunning
+                
