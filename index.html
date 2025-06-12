@@ -233,6 +233,13 @@ border-radius: 4px;
 transition: width 0.1s ease;
 }
 
+.auto-start-indicator {
+font-size: 0.9rem;
+color: rgba(255, 255, 255, 0.8);
+margin-top: 10px;
+min-height: 20px;
+}
+
 @media (max-width: 600px) {
 .container {
 padding: 20px;
@@ -258,6 +265,7 @@ font-size: 2rem;
 
 <div class="session-type" id="sessionType">Study Session</div>
 <div class="timer-display" id="timerDisplay">25:00</div>
+<div class="auto-start-indicator" id="autoStartIndicator"></div>
 
 <div class="progress-bar">
 <div class="progress-fill" id="progressFill"></div>
@@ -300,20 +308,21 @@ font-size: 2rem;
 
 <script>
 let timer = null;
+let autoStartTimer = null;
 let isRunning = false;
 let isStudySession = true;
-let timeLeft;
-let studyDuration;
-let breakDuration;
-let totalTimeForSession;
+let timeLeft = 0;
+let studyDuration = 25 * 60;
+let breakDuration = 5 * 60;
+let totalTimeForSession = 0;
 let completedSessions = 0;
 let totalStudyTime = 0;
 
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 function loadDefaultsAndInit() {
-const defaultStudy = localStorage.getItem('defaultStudyTime') || 25;
-const defaultBreak = localStorage.getItem('defaultBreakTime') || 5;
+const defaultStudy = parseInt(localStorage.getItem('defaultStudyTime') || '25');
+const defaultBreak = parseInt(localStorage.getItem('defaultBreakTime') || '5');
 
 document.getElementById('studySlider').value = defaultStudy;
 document.getElementById('studyValue').textContent = `${defaultStudy}min`;
@@ -393,7 +402,7 @@ sessionTypeEl.className = 'session-type break-session';
 timerDisplayEl.className = 'timer-display break-timer';
 }
 
-const progress = ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100;
+const progress = totalTimeForSession > 0 ? ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100 : 0;
 const progressFill = document.getElementById('progressFill');
 progressFill.style.width = `${progress}%`;
 
@@ -407,7 +416,7 @@ document.title = `${formatTime(timeLeft)} - ${isStudySession ? 'Study' : 'Break'
 }
 
 function updateStudyTime() {
-const value = document.getElementById('studySlider').value;
+const value = parseInt(document.getElementById('studySlider').value);
 studyDuration = value * 60;
 document.getElementById('studyValue').textContent = `${value}min`;
 
@@ -419,7 +428,7 @@ updateDisplay();
 }
 
 function updateBreakTime() {
-const value = document.getElementById('breakSlider').value;
+const value = parseInt(document.getElementById('breakSlider').value);
 breakDuration = value * 60;
 document.getElementById('breakValue').textContent = `${value}min`;
 
@@ -439,6 +448,13 @@ startTimer();
 }
 
 function startTimer() {
+// Clear any auto-start timer
+if (autoStartTimer) {
+clearInterval(autoStartTimer);
+autoStartTimer = null;
+}
+document.getElementById('autoStartIndicator').textContent = '';
+
 if (audioContext.state === 'suspended') {
 audioContext.resume();
 }
@@ -459,14 +475,27 @@ completeSession();
 
 function pauseTimer() {
 isRunning = false;
+if (timer) {
 clearInterval(timer);
+timer = null;
+}
 document.getElementById('startBtn').textContent = 'Resume';
 document.getElementById('startBtn').className = 'start-btn';
 }
 
 function resetTimer() {
-isRunning = false;
+// Clear all timers
+if (timer) {
 clearInterval(timer);
+timer = null;
+}
+if (autoStartTimer) {
+clearInterval(autoStartTimer);
+autoStartTimer = null;
+}
+
+isRunning = false;
+document.getElementById('autoStartIndicator').textContent = '';
 
 if (isStudySession) {
 timeLeft = studyDuration;
@@ -482,7 +511,11 @@ updateDisplay();
 }
 
 function completeSession() {
+// Clear the main timer first
+if (timer) {
 clearInterval(timer);
+timer = null;
+}
 isRunning = false;
 
 if (isStudySession) {
@@ -490,6 +523,7 @@ playStudyEndSound();
 completedSessions++;
 totalStudyTime += Math.floor(studyDuration / 60);
 
+// Switch to break session
 isStudySession = false;
 timeLeft = breakDuration;
 totalTimeForSession = breakDuration;
@@ -503,6 +537,7 @@ icon: '🍅'
 } else {
 playBreakEndSound();
 
+// Switch to study session
 isStudySession = true;
 timeLeft = studyDuration;
 totalTimeForSession = studyDuration;
@@ -515,27 +550,44 @@ icon: '📚'
 }
 }
 
+// Update stats
 document.getElementById('completedSessions').textContent = completedSessions;
 document.getElementById('totalStudyTime').textContent = `${totalStudyTime}m`;
 
+// Reset button state
 document.getElementById('startBtn').textContent = 'Start';
 document.getElementById('startBtn').className = 'start-btn';
 
+// Update display immediately
 updateDisplay();
 
-// Auto-start the next session after 3 seconds
-setTimeout(() => {
+// Start auto-start countdown
+let countdown = 3;
+document.getElementById('autoStartIndicator').textContent = `Auto-starting in ${countdown}s...`;
+
+autoStartTimer = setInterval(() => {
+countdown--;
+if (countdown > 0) {
+document.getElementById('autoStartIndicator').textContent = `Auto-starting in ${countdown}s...`;
+} else {
+// Clear the auto-start timer
+clearInterval(autoStartTimer);
+autoStartTimer = null;
+document.getElementById('autoStartIndicator').textContent = '';
+
+// Start the timer if not already running
 if (!isRunning) {
 startTimer();
 }
-}, 3000);
+}
+}, 1000);
 }
 
 if ('Notification' in window && Notification.permission === 'default') {
 Notification.requestPermission();
 }
 
-// Initialize timer with defaults from localStorage
+// Initialize timer with defaults
 loadDefaultsAndInit();
 
 window.addEventListener('beforeunload', (e) => {
