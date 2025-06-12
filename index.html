@@ -45,6 +45,17 @@
             margin: 30px 0;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+        }
+
+        .study-timer {
+            color: #ff6b6b;
+            text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+        }
+
+        .break-timer {
+            color: #4ecdc4;
+            text-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
         }
 
         .session-type {
@@ -309,12 +320,28 @@
             document.getElementById('timerDisplay').textContent = formatTime(timeLeft);
             
             const sessionTypeEl = document.getElementById('sessionType');
-            sessionTypeEl.textContent = isStudySession ? 'Study Session' : 'Break Time';
-            sessionTypeEl.className = isStudySession ? 'session-type study-session' : 'session-type break-session';
+            const timerDisplayEl = document.getElementById('timerDisplay');
             
-            // Update progress bar
+            if (isStudySession) {
+                sessionTypeEl.textContent = 'Study Session';
+                sessionTypeEl.className = 'session-type study-session';
+                timerDisplayEl.className = 'timer-display study-timer';
+            } else {
+                sessionTypeEl.textContent = 'Break Time';
+                sessionTypeEl.className = 'session-type break-session';
+                timerDisplayEl.className = 'timer-display break-timer';
+            }
+            
+            // Update progress bar with different colors
             const progress = ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100;
-            document.getElementById('progressFill').style.width = `${progress}%`;
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = `${progress}%`;
+            
+            if (isStudySession) {
+                progressFill.style.background = 'linear-gradient(90deg, #ff6b6b, #ff8e8e)';
+            } else {
+                progressFill.style.background = 'linear-gradient(90deg, #4ecdc4, #7ed6cc)';
+            }
             
             // Update document title for notifications
             document.title = `${formatTime(timeLeft)} - ${isStudySession ? 'Study' : 'Break'} | Pomodoro Timer`;
