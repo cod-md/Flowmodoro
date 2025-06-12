@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pomodoro Pro Timer</title>
+    <title>✨ YASSIFIED Pomodoro Timer ✨</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
@@ -12,261 +14,505 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background-attachment: fixed;
             display: flex;
             justify-content: center;
             align-items: center;
-            color: white;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
             padding: 40px;
+            border-radius: 30px;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
             text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            max-width: 500px;
-            width: 90%;
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            transform: translateY(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 30px 60px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .sparkle {
+            position: absolute;
+            color: #ffd700;
+            font-size: 1.5em;
+            animation: sparkle 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1) rotate(180deg); }
         }
 
         h1 {
-            font-size: 2.5rem;
             margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5em;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            position: relative;
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.3)); }
+            to { filter: drop-shadow(0 0 20px rgba(118, 75, 162, 0.5)); }
         }
 
         .timer-display {
-            font-size: 4rem;
-            font-weight: bold;
-            margin: 30px 0;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            font-family: 'Courier New', monospace;
-            transition: all 0.3s ease;
+            font-size: 5em;
+            font-weight: 800;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #4CAF50, #45a049, #2e7d32);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            text-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+            animation: pulse 2s ease-in-out infinite;
         }
 
-        .study-timer {
-            color: #ffb8b8; /* Lighter red for better visibility */
-            text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
         }
 
-        .break-timer {
-            color: #93e9e3; /* Lighter cyan for better visibility */
-            text-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
-        }
-
-        .session-type {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            padding: 10px 20px;
-            border-radius: 25px;
-            display: inline-block;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-        }
-
-        .study-session {
-            background: rgba(255, 99, 71, 0.8);
-        }
-
-        .break-session {
-            background: rgba(50, 205, 50, 0.8);
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease-in-out;
-        }
-
-        .controls {
-            margin: 30px 0;
+        .timer-display.break-mode {
+            background: linear-gradient(135deg, #2196F3, #1976D2, #0d47a1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(33, 150, 243, 0.3);
         }
 
         .settings {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
             gap: 20px;
-            margin: 30px 0;
         }
 
-        .setting-group {
-            background: rgba(255, 255, 255, 0.1);
+        .setting {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .setting label {
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .setting input {
+            width: 80px;
+            height: 50px;
+            padding: 10px;
+            border: 2px solid transparent;
             border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+            background: rgba(102, 126, 234, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
         }
 
-        .setting-group h3 {
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-
-        .setting-control-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-        }
-
-        .time-input {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 10px 0;
-            flex-grow: 1;
-        }
-
-        input[type="range"] {
-            width: 100px;
-            height: 6px;
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.3);
+        .setting input:focus {
             outline: none;
-            -webkit-appearance: none;
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.2);
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
         }
 
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: white;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
         }
 
-        input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: white;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .time-value {
-            font-weight: bold;
-            min-width: 40px;
-        }
-
-        button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+        .buttons button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
+            border: none;
             padding: 15px 30px;
-            font-size: 1.1rem;
             border-radius: 25px;
             cursor: pointer;
-            margin: 10px;
-            transition: all 0.3s ease;
-            font-weight: bold;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 120px;
         }
 
-        button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        button:disabled {
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        button:active {
-            transform: translateY(0);
+        .buttons button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
         }
 
-        .save-btn {
-            padding: 8px 15px;
-            font-size: 0.9rem;
-            font-weight: normal;
+        .buttons button:hover::before {
+            left: 100%;
+        }
+
+        .buttons button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(76, 175, 80, 0.4);
+        }
+
+        .buttons button:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        #reset-btn {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+
+        #reset-btn:hover {
+            box-shadow: 0 15px 35px rgba(244, 67, 54, 0.4);
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            animation: statusPulse 2s infinite;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .mode-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 16px;
+            background: rgba(76, 175, 80, 0.1);
             border-radius: 20px;
-            margin: 0;
-            flex-shrink: 0;
-            background: rgba(255, 255, 255, 0.15);
-            border-width: 1px;
-        }
-        
-        .start-btn { background: rgba(50, 205, 50, 0.6); border-color: rgba(50, 205, 50, 0.8); }
-        .pause-btn { background: rgba(255, 165, 0, 0.6); border-color: rgba(255, 165, 0, 0.8); }
-        .reset-btn { background: rgba(255, 99, 71, 0.6); border-color: rgba(255, 99, 71, 0.8); }
-
-        .stats {
-            margin-top: 30px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #4CAF50;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+            transition: all 0.3s ease;
         }
 
-        .stats h3 { margin-bottom: 10px; }
+        .mode-indicator.break-mode {
+            background: rgba(33, 150, 243, 0.1);
+            color: #2196F3;
+            border-color: rgba(33, 150, 243, 0.2);
+        }
 
-        @media (max-width: 600px) {
-            .container { padding: 20px; }
-            .timer-display { font-size: 3.5rem; }
-            .settings { grid-template-columns: 1fr; }
-            h1 { font-size: 2rem; }
-            button { padding: 12px 24px; font-size: 1rem; }
+        /* Motivational quotes */
+        .quote {
+            position: absolute;
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            text-align: center;
+            max-width: 300px;
+        }
+
+        .quote.show {
+            opacity: 1;
+        }
+
+        /* Responsive design */
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .timer-display {
+                font-size: 3.5em;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .settings {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+                align-items: center;
+            }
         }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h1>🍅 Pomodoro Pro</h1>
-
-        <div class="session-type" id="sessionType">Choose a duration</div>
-        <div class="timer-display" id="timerDisplay">25:00</div>
-
-        <div class="progress-bar">
-            <div class="progress-fill" id="progressFill"></div>
+        <div class="sparkle" style="top: 10px; left: 20px;">✨</div>
+        <div class="sparkle" style="top: 20px; right: 30px; animation-delay: 0.5s;">💫</div>
+        <div class="sparkle" style="bottom: 30px; left: 40px; animation-delay: 1s;">⭐</div>
+        <div class="sparkle" style="bottom: 20px; right: 20px; animation-delay: 1.5s;">✨</div>
+        
+        <div class="status-indicator"></div>
+        <div class="mode-indicator" id="mode-indicator">STUDY TIME</div>
+        
+        <h1>✨ YASSIFIED POMODORO ✨</h1>
+        <div class="timer-display" id="timer-display">
+            <span id="minutes">25</span>:<span id="seconds">00</span>
         </div>
-
-        <div class="controls">
-            <button class="start-btn" id="startBtn">Start</button>
-            <button class="reset-btn" id="resetBtn">Reset</button>
-        </div>
-
         <div class="settings">
-            <div class="setting-group">
-                <h3>Study Time</h3>
-                <div class="setting-control-wrapper">
-                    <div class="time-input">
-                        <input type="range" id="studySlider" min="1" max="60" value="25">
-                        <span class="time-value" id="studyValue">25 min</span>
-                    </div>
-                    <button id="saveStudyBtn" class="save-btn">Save</button>
-                </div>
+            <div class="setting">
+                <label for="study-time">💪 Study (min)</label>
+                <input type="number" id="study-time" value="25" min="25" max="60">
             </div>
-            <div class="setting-group">
-                <h3>Break Time</h3>
-                <div class="setting-control-wrapper">
-                    <div class="time-input">
-                        <input type="range" id="breakSlider" min="1" max="15" value="5">
-                        <span class="time-value" id="breakValue">5 min</span>
-                    </div>
-                    <button id="saveBreakBtn" class="save-btn">Save</button>
-                </div>
+            <div class="setting">
+                <label for="break-time">☕ Break (min)</label>
+                <input type="number" id="break-time" value="5" min="5" max="15">
             </div>
         </div>
+        <div class="buttons">
+            <button id="start-btn">▶️ SLAY</button>
+            <button id="reset-btn">🔄 RESET</button>
+        </div>
+    </div>
+    
+    <div class="quote" id="motivational-quote">
+        "You're absolutely CRUSHING it! 💅✨"
+    </div>
 
-        <div class="stats">
-            <h3>Session Stats</h3>
+    <script>
+        const minutesElement = document.getElementById('minutes');
+        const secondsElement = document.getElementById('seconds');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const studyTimeInput = document.getElementById('study-time');
+        const breakTimeInput = document.getElementById('break-time');
+        const timerDisplay = document.getElementById('timer-display');
+        const modeIndicator = document.getElementById('mode-indicator');
+        const quote = document.getElementById('motivational-quote');
+
+        let timer;
+        let isStudySession = true;
+        let isRunning = false;
+        let totalSeconds;
+
+        const motivationalQuotes = [
+            "You're absolutely CRUSHING it! 💅✨",
+            "Main character energy activated! 🌟",
+            "Periodt! You're doing THAT! 💯",
+            "Bestie, you're literally glowing! ✨",
+            "That's some big brain energy! 🧠💖",
+            "Serving productivity realness! 👑",
+            "You're the moment! Keep going! 🔥",
+            "Iconic behavior honestly! 💅"
+        ];
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            minutesElement.textContent = String(mins).padStart(2, '0');
+            secondsElement.textContent = String(secs).padStart(2, '0');
+        }
+
+        function showRandomQuote() {
+            const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+            quote.textContent = randomQuote;
+            quote.classList.add('show');
             
+            setTimeout(() => {
+                quote.classList.remove('show');
+            }, 3000);
+        }
+
+        function updateModeIndicator() {
+            if (isStudySession) {
+                modeIndicator.textContent = '💪 STUDY TIME';
+                modeIndicator.classList.remove('break-mode');
+                timerDisplay.classList.remove('break-mode');
+            } else {
+                modeIndicator.textContent = '☕ BREAK TIME';
+                modeIndicator.classList.add('break-mode');
+                timerDisplay.classList.add('break-mode');
+            }
+        }
+
+        function createSparkleEffect() {
+            const sparkle = document.createElement('div');
+            sparkle.innerHTML = '✨';
+            sparkle.style.position = 'fixed';
+            sparkle.style.left = Math.random() * window.innerWidth + 'px';
+            sparkle.style.top = Math.random() * window.innerHeight + 'px';
+            sparkle.style.fontSize = (Math.random() * 20 + 10) + 'px';
+            sparkle.style.pointerEvents = 'none';
+            sparkle.style.zIndex = '1000';
+            sparkle.style.animation = 'sparkle 2s ease-out forwards';
+            
+            document.body.appendChild(sparkle);
+            
+            setTimeout(() => {
+                document.body.removeChild(sparkle);
+            }, 2000);
+        }
+
+        function startTimer() {
+            if (isRunning) return;
+
+            isRunning = true;
+            startBtn.innerHTML = '⏸️ PAUSE';
+            const studyTime = parseInt(studyTimeInput.value) * 60;
+            const breakTime = parseInt(breakTimeInput.value) * 60;
+
+            if (totalSeconds === undefined) {
+                totalSeconds = isStudySession ? studyTime : breakTime;
+            }
+            
+            updateModeIndicator();
+            updateTimerDisplay();
+            showRandomQuote();
+
+            timer = setInterval(() => {
+                if (totalSeconds <= 0) {
+                    clearInterval(timer);
+                    isRunning = false;
+                    isStudySession = !isStudySession;
+                    
+                    // Create celebration effect
+                    for (let i = 0; i < 10; i++) {
+                        setTimeout(() => createSparkleEffect(), i * 100);
+                    }
+
+                    setTimeout(() => {
+                        totalSeconds = undefined;
+                        startTimer();
+                    }, 1000);
+                } else {
+                    totalSeconds--;
+                    updateTimerDisplay();
+                    
+                    // Random sparkle effects during timer
+                    if (Math.random() < 0.01) {
+                        createSparkleEffect();
+                    }
+                }
+            }, 1000);
+        }
+        
+        function pauseTimer() {
+            clearInterval(timer);
+            isRunning = false;
+            startBtn.innerHTML = '▶️ RESUME';
+        }
+        
+        function handleStartClick() {
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            isRunning = false;
+            isStudySession = true;
+            const studyTime = parseInt(studyTimeInput.value);
+            totalSeconds = studyTime * 60;
+            updateTimerDisplay();
+            updateModeIndicator();
+            startBtn.innerHTML = '▶️ SLAY';
+            
+            // Reset celebration
+            createSparkleEffect();
+            showRandomQuote();
+        }
+
+        startBtn.addEventListener('click', handleStartClick);
+        resetBtn.addEventListener('click', resetTimer);
+        
+        studyTimeInput.addEventListener('change', () => {
+            if (!isRunning) resetTimer();
+        });
+        breakTimeInput.addEventListener('change', () => {
+            if (!isRunning) resetTimer();
+        });
+
+        // Initialize display on page load
+        resetTimer();
+        
+        // Show initial motivational quote
+        setTimeout(() => {
+            showRandomQuote();
+        }, 1000);
+    </script>
+</body>
+</html>
