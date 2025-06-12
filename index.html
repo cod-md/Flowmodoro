@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✨ YASSIFIED Pomodoro Timer ✨</title>
+    <title>Pomodoro Timer</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
         
@@ -71,19 +71,6 @@
                 inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
 
-        .sparkle {
-            position: absolute;
-            color: #ffd700;
-            font-size: 1.5em;
-            animation: sparkle 2s infinite;
-            pointer-events: none;
-        }
-
-        @keyframes sparkle {
-            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
-            50% { opacity: 1; transform: scale(1) rotate(180deg); }
-        }
-
         h1 {
             margin-bottom: 30px;
             background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
@@ -94,12 +81,6 @@
             font-weight: 800;
             letter-spacing: -0.02em;
             position: relative;
-            animation: glow 3s ease-in-out infinite alternate;
-        }
-
-        @keyframes glow {
-            from { filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.3)); }
-            to { filter: drop-shadow(0 0 20px rgba(118, 75, 162, 0.5)); }
         }
 
         .timer-display {
@@ -143,6 +124,7 @@
             align-items: center;
             flex: 1;
             min-width: 150px;
+            position: relative;
         }
 
         .setting label {
@@ -152,6 +134,12 @@
             font-size: 0.9em;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .setting input {
@@ -179,6 +167,47 @@
             background: rgba(102, 126, 234, 0.2);
             transform: scale(1.05);
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            min-width: 50px;
+            height: 35px;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(255, 152, 0, 0.4);
+        }
+
+        .save-btn:active {
+            transform: translateY(0) scale(1);
+        }
+
+        .save-btn.saved {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            animation: saveSuccess 0.6s ease-out;
+        }
+
+        @keyframes saveSuccess {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Hidden sound inputs - keep for functionality but hide from view */
+        .hidden-sound-inputs {
+            display: none;
         }
 
         .buttons {
@@ -277,25 +306,6 @@
             border-color: rgba(33, 150, 243, 0.2);
         }
 
-        /* Motivational quotes */
-        .quote {
-            position: absolute;
-            bottom: -60px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-style: italic;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9em;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            text-align: center;
-            max-width: 300px;
-        }
-
-        .quote.show {
-            opacity: 1;
-        }
-
         /* Responsive design */
         @media (max-width: 480px) {
             .container {
@@ -325,46 +335,44 @@
 </head>
 <body>
     <div class="container">
-        <div class="sparkle" style="top: 10px; left: 20px;">✨</div>
-        <div class="sparkle" style="top: 20px; right: 30px; animation-delay: 0.5s;">💫</div>
-        <div class="sparkle" style="bottom: 30px; left: 40px; animation-delay: 1s;">⭐</div>
-        <div class="sparkle" style="bottom: 20px; right: 20px; animation-delay: 1.5s;">✨</div>
-        
         <div class="status-indicator"></div>
         <div class="mode-indicator" id="mode-indicator">STUDY TIME</div>
         
-        <h1>✨ YASSIFIED POMODORO ✨</h1>
+        <h1>Pomodoro Timer</h1>
         <div class="timer-display" id="timer-display">
             <span id="minutes">25</span>:<span id="seconds">00</span>
         </div>
         <div class="settings">
             <div class="setting">
-                <label for="study-time">💪 Study (min)</label>
-                <input type="number" id="study-time" value="25" min="25" max="60">
+                <label for="study-time">Study (min)</label>
+                <div class="input-row">
+                    <input type="number" id="study-time" value="25" min="1" max="60">
+                    <button class="save-btn" id="save-study-btn">SAVE</button>
+                </div>
             </div>
             <div class="setting">
-                <label for="break-time">☕ Break (min)</label>
-                <input type="number" id="break-time" value="5" min="5" max="15">
+                <label for="break-time">Break (min)</label>
+                <div class="input-row">
+                    <input type="number" id="break-time" value="5" min="1" max="60">
+                    <button class="save-btn" id="save-break-btn">SAVE</button>
+                </div>
             </div>
         </div>
-        <div class="settings">
+        <!-- Hidden sound inputs - removed from view but kept for functionality -->
+        <div class="hidden-sound-inputs">
             <div class="setting">
-                <label for="study-sound">🎵 Study Sound</label>
+                <label for="study-sound">Study Sound</label>
                 <input type="text" id="study-sound" placeholder="study_sound.mp3" style="width: 150px; font-size: 0.9em;">
             </div>
             <div class="setting">
-                <label for="break-sound">🔔 Break Sound</label>
+                <label for="break-sound">Break Sound</label>
                 <input type="text" id="break-sound" placeholder="break_sound.mp3" style="width: 150px; font-size: 0.9em;">
             </div>
         </div>
         <div class="buttons">
-            <button id="start-btn">▶️ SLAY</button>
-            <button id="reset-btn">🔄 RESET</button>
+            <button id="start-btn">START</button>
+            <button id="reset-btn">RESET</button>
         </div>
-    </div>
-    
-    <div class="quote" id="motivational-quote">
-        "You're absolutely CRUSHING it! 💅✨"
     </div>
 
     <script>
@@ -378,23 +386,51 @@
         const breakSoundInput = document.getElementById('break-sound');
         const timerDisplay = document.getElementById('timer-display');
         const modeIndicator = document.getElementById('mode-indicator');
-        const quote = document.getElementById('motivational-quote');
+        const saveStudyBtn = document.getElementById('save-study-btn');
+        const saveBreakBtn = document.getElementById('save-break-btn');
 
         let timer;
         let isStudySession = true;
         let isRunning = false;
         let totalSeconds;
 
-        const motivationalQuotes = [
-            "You're absolutely CRUSHING it! 💅✨",
-            "Main character energy activated! 🌟",
-            "Periodt! You're doing THAT! 💯",
-            "Bestie, you're literally glowing! ✨",
-            "That's some big brain energy! 🧠💖",
-            "Serving productivity realness! 👑",
-            "You're the moment! Keep going! 🔥",
-            "Iconic behavior honestly! 💅"
-        ];
+        // Load saved settings on page load
+        function loadSettings() {
+            const savedStudyTime = localStorage.getItem('pomodoro-study-time');
+            const savedBreakTime = localStorage.getItem('pomodoro-break-time');
+            
+            if (savedStudyTime) {
+                studyTimeInput.value = savedStudyTime;
+            }
+            if (savedBreakTime) {
+                breakTimeInput.value = savedBreakTime;
+            }
+        }
+
+        // Save study time setting
+        function saveStudyTime() {
+            const studyTime = studyTimeInput.value;
+            localStorage.setItem('pomodoro-study-time', studyTime);
+            showSaveSuccess(saveStudyBtn);
+        }
+
+        // Save break time setting
+        function saveBreakTime() {
+            const breakTime = breakTimeInput.value;
+            localStorage.setItem('pomodoro-break-time', breakTime);
+            showSaveSuccess(saveBreakBtn);
+        }
+
+        // Show save success animation
+        function showSaveSuccess(button) {
+            button.classList.add('saved');
+            button.textContent = 'SAVED';
+            
+            setTimeout(() => {
+                button.classList.remove('saved');
+                button.textContent = 'SAVE';
+            }, 1500);
+        }
 
         function updateTimerDisplay() {
             const mins = Math.floor(totalSeconds / 60);
@@ -403,23 +439,13 @@
             secondsElement.textContent = String(secs).padStart(2, '0');
         }
 
-        function showRandomQuote() {
-            const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
-            quote.textContent = randomQuote;
-            quote.classList.add('show');
-            
-            setTimeout(() => {
-                quote.classList.remove('show');
-            }, 3000);
-        }
-
         function updateModeIndicator() {
             if (isStudySession) {
-                modeIndicator.textContent = '💪 STUDY TIME';
+                modeIndicator.textContent = 'STUDY TIME';
                 modeIndicator.classList.remove('break-mode');
                 timerDisplay.classList.remove('break-mode');
             } else {
-                modeIndicator.textContent = '☕ BREAK TIME';
+                modeIndicator.textContent = 'BREAK TIME';
                 modeIndicator.classList.add('break-mode');
                 timerDisplay.classList.add('break-mode');
             }
@@ -485,29 +511,11 @@
             }
         }
 
-        function createSparkleEffect() {
-            const sparkle = document.createElement('div');
-            sparkle.innerHTML = '✨';
-            sparkle.style.position = 'fixed';
-            sparkle.style.left = Math.random() * window.innerWidth + 'px';
-            sparkle.style.top = Math.random() * window.innerHeight + 'px';
-            sparkle.style.fontSize = (Math.random() * 20 + 10) + 'px';
-            sparkle.style.pointerEvents = 'none';
-            sparkle.style.zIndex = '1000';
-            sparkle.style.animation = 'sparkle 2s ease-out forwards';
-            
-            document.body.appendChild(sparkle);
-            
-            setTimeout(() => {
-                document.body.removeChild(sparkle);
-            }, 2000);
-        }
-
         function startTimer() {
             if (isRunning) return;
 
             isRunning = true;
-            startBtn.innerHTML = '⏸️ PAUSE';
+            startBtn.innerHTML = 'PAUSE';
             const studyTime = parseInt(studyTimeInput.value) * 60;
             const breakTime = parseInt(breakTimeInput.value) * 60;
 
@@ -517,19 +525,11 @@
             
             updateModeIndicator();
             updateTimerDisplay();
-            showRandomQuote();
-            
-            // Don't play sound when manually starting - only when transitioning between sessions
 
             timer = setInterval(() => {
                 if (totalSeconds <= 0) {
                     clearInterval(timer);
                     isRunning = false;
-                    
-                    // Create celebration effect
-                    for (let i = 0; i < 10; i++) {
-                        setTimeout(() => createSparkleEffect(), i * 100);
-                    }
 
                     // Play appropriate sound BEFORE switching sessions
                     if (isStudySession) {
@@ -550,11 +550,6 @@
                 } else {
                     totalSeconds--;
                     updateTimerDisplay();
-                    
-                    // Random sparkle effects during timer
-                    if (Math.random() < 0.01) {
-                        createSparkleEffect();
-                    }
                 }
             }, 1000);
         }
@@ -562,7 +557,7 @@
         function pauseTimer() {
             clearInterval(timer);
             isRunning = false;
-            startBtn.innerHTML = '▶️ RESUME';
+            startBtn.innerHTML = 'RESUME';
         }
         
         function handleStartClick() {
@@ -581,15 +576,14 @@
             totalSeconds = studyTime * 60;
             updateTimerDisplay();
             updateModeIndicator();
-            startBtn.innerHTML = '▶️ SLAY';
-            
-            // Reset celebration
-            createSparkleEffect();
-            showRandomQuote();
+            startBtn.innerHTML = 'START';
         }
 
+        // Event listeners
         startBtn.addEventListener('click', handleStartClick);
         resetBtn.addEventListener('click', resetTimer);
+        saveStudyBtn.addEventListener('click', saveStudyTime);
+        saveBreakBtn.addEventListener('click', saveBreakTime);
         
         studyTimeInput.addEventListener('change', () => {
             if (!isRunning) resetTimer();
@@ -598,13 +592,9 @@
             if (!isRunning) resetTimer();
         });
 
-        // Initialize display on page load
+        // Initialize on page load
+        loadSettings();
         resetTimer();
-        
-        // Show initial motivational quote
-        setTimeout(() => {
-            showRandomQuote();
-        }, 1000);
     </script>
 </body>
 </html>
