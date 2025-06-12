@@ -233,23 +233,6 @@ border-radius: 4px;
 transition: width 0.1s ease;
 }
 
-.debug-info {
-margin-top: 20px;
-padding: 10px;
-background: rgba(0, 0, 0, 0.3);
-border-radius: 10px;
-font-size: 0.8rem;
-font-family: monospace;
-text-align: left;
-}
-
-.auto-start-indicator {
-font-size: 0.9rem;
-color: rgba(255, 255, 255, 0.8);
-margin-top: 10px;
-min-height: 20px;
-}
-
 @media (max-width: 600px) {
 .container {
 padding: 20px;
@@ -275,7 +258,6 @@ font-size: 2rem;
 
 <div class="session-type" id="sessionType">Study Session</div>
 <div class="timer-display" id="timerDisplay">25:00</div>
-<div class="auto-start-indicator" id="autoStartIndicator"></div>
 
 <div class="progress-bar">
 <div class="progress-fill" id="progressFill"></div>
@@ -314,301 +296,37 @@ font-size: 2rem;
 <p>Completed Sessions: <span id="completedSessions">0</span></p>
 <p>Total Study Time: <span id="totalStudyTime">0m</span></p>
 </div>
-
-<div class="debug-info" id="debugInfo">
-Debug: Timer initialized
-</div>
 </div>
 
 <script>
-// Global state
-let timerInterval = null;
-let autoStartTimeout = null;
+let timer = null;
 let isRunning = false;
 let isStudySession = true;
 let timeLeft = 0;
-let studyDuration = 0;
-let breakDuration = 0;
+let studyDuration = 25 * 60;
+let breakDuration = 5 * 60;
 let totalTimeForSession = 0;
 let completedSessions = 0;
 let totalStudyTime = 0;
 
-// Debug function
-function debug(message) {
-console.log(`[DEBUG] ${message}`);
-document.getElementById('debugInfo').textContent = `Debug: ${message}`;
-}
-
-// Audio setup
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-function createBeep(frequency, duration) {
-try {
-const oscillator = audioContext.createOscillator();
-const gainNode = audioContext.createGain();
-oscillator.connect(gainNode);
-gainNode.connect(audioContext.destination);
-oscillator.frequency.value = frequency;
-oscillator.type = 'sine';
-gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-oscillator.start(audioContext.currentTime);
-oscillator.stop(audioContext.currentTime + duration);
-} catch (e) {
-console.log('Audio not available');
-}
-}
-
-function playSessionEndSound() {
-createBeep(800, 0.3);
-}
-
-// Time formatting
-function formatTime(seconds) {
-if (seconds < 0) seconds = 0;
-const mins = Math.floor(seconds / 60);
-const secs = seconds % 60;
-return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-// Initialize the timer
-function initializeTimer() {
+function loadDefaultsAndInit() {
 const defaultStudy = parseInt(localStorage.getItem('defaultStudyTime') || '25');
 const defaultBreak = parseInt(localStorage.getItem('defaultBreakTime') || '5');
 
 document.getElementById('studySlider').value = defaultStudy;
 document.getElementById('studyValue').textContent = `${defaultStudy}min`;
+
 document.getElementById('breakSlider').value = defaultBreak;
 document.getElementById('breakValue').textContent = `${defaultBreak}min`;
 
 studyDuration = defaultStudy * 60;
 breakDuration = defaultBreak * 60;
-isStudySession = true;
 timeLeft = studyDuration;
 totalTimeForSession = studyDuration;
 
-debug(`Initialized - Study: ${studyDuration}s, Break: ${breakDuration}s, Current: ${timeLeft}s`);
 updateDisplay();
-}
-
-// Update the display
-function updateDisplay() {
-document.getElementById('timerDisplay').textContent = formatTime(timeLeft);
-
-const sessionTypeEl = document.getElementById('sessionType');
-const timerDisplayEl = document.getElementById('timerDisplay');
-
-if (isStudySession) {
-sessionTypeEl.textContent = 'Study Session';
-sessionTypeEl.className = 'session-type study-session';
-timerDisplayEl.className = 'timer-display study-timer';
-} else {
-sessionTypeEl.textContent = 'Break Time';
-sessionTypeEl.className = 'session-type break-session';
-timerDisplayEl.className = 'timer-display break-timer';
-}
-
-// Update progress bar
-const progress = totalTimeForSession > 0 ? Math.max(0, ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100) : 0;
-document.getElementById('progressFill').style.width = `${progress}%`;
-
-// Update page title
-document.title = `${formatTime(timeLeft)} - ${isStudySession ? 'Study' : 'Break'} | Pomodoro Timer`;
-}
-
-// Start the timer
-function startTimer() {
-debug(`Starting timer - timeLeft: ${timeLeft}, isStudySession: ${isStudySession}`);
-
-// Clear any existing intervals
-if (timerInterval) {
-clearInterval(timerInterval);
-}
-if (autoStartTimeout) {
-clearTimeout(autoStartTimeout);
-autoStartTimeout = null;
-}
-document.getElementById('autoStartIndicator').textContent = '';
-
-// Resume audio context if needed
-if (audioContext.state === 'suspended') {
-audioContext.resume();
-}
-
-isRunning = true;
-document.getElementById('startBtn').textContent = 'Pause';
-document.getElementById('startBtn').className = 'pause-btn';
-
-timerInterval = setInterval(() => {
-timeLeft--;
-debug(`Timer tick - timeLeft: ${timeLeft}`);
-updateDisplay();
-
-if (timeLeft <= 0) {
-debug('Timer reached zero - completing session');
-completeSession();
-}
-}, 1000);
-}
-
-// Pause the timer
-function pauseTimer() {
-debug('Pausing timer');
-isRunning = false;
-if (timerInterval) {
-clearInterval(timerInterval);
-timerInterval = null;
-}
-document.getElementById('startBtn').textContent = 'Resume';
-document.getElementById('startBtn').className = 'start-btn';
-}
-
-// Toggle timer
-function toggleTimer() {
-if (isRunning) {
-pauseTimer();
-} else {
-startTimer();
-}
-}
-
-// Reset timer
-function resetTimer() {
-debug('Resetting timer');
-
-// Clear all intervals and timeouts
-if (timerInterval) {
-clearInterval(timerInterval);
-timerInterval = null;
-}
-if (autoStartTimeout) {
-clearTimeout(autoStartTimeout);
-autoStartTimeout = null;
-}
-
-isRunning = false;
-document.getElementById('autoStartIndicator').textContent = '';
-
-// Reset to appropriate duration
-if (isStudySession) {
-timeLeft = studyDuration;
-totalTimeForSession = studyDuration;
-} else {
-timeLeft = breakDuration;
-totalTimeForSession = breakDuration;
-}
-
-document.getElementById('startBtn').textContent = 'Start';
-document.getElementById('startBtn').className = 'start-btn';
-updateDisplay();
-}
-
-// Complete session and switch
-function completeSession() {
-debug(`Session completed - was study: ${isStudySession}`);
-    
-// Stop the timer
-if (timerInterval) {
-clearInterval(timerInterval);
-timerInterval = null;
-}
-isRunning = false;
-
-// Play sound
-playSessionEndSound();
-
-// Update stats and switch session
-if (isStudySession) {
-completedSessions++;
-totalStudyTime += Math.floor(studyDuration / 60);
-debug(`Study session completed - switching to break. Stats: ${completedSessions} sessions, ${totalStudyTime}m total`);
-
-// Switch to break
-isStudySession = false;
-timeLeft = breakDuration;
-totalTimeForSession = breakDuration;
-
-// Notification
-if (Notification.permission === 'granted') {
-new Notification('Study session complete!', {
-body: 'Time for a break! 🎉'
-});
-}
-} else {
-debug('Break session completed - switching to study');
-
-// Switch to study
-isStudySession = true;
-timeLeft = studyDuration;
-totalTimeForSession = studyDuration;
-
-// Notification
-if (Notification.permission === 'granted') {
-new Notification('Break time over!', {
-body: 'Ready to focus again? 💪'
-});
-}
-}
-
-// Update stats display
-document.getElementById('completedSessions').textContent = completedSessions;
-document.getElementById('totalStudyTime').textContent = `${totalStudyTime}m`;
-
-// Update button
-document.getElementById('startBtn').textContent = 'Start';
-document.getElementById('startBtn').className = 'start-btn';
-
-// Update display immediately
-updateDisplay();
-
-debug(`Session switched - now ${isStudySession ? 'study' : 'break'}, timeLeft: ${timeLeft}`);
-
-// Auto-start countdown
-let countdown = 3;
-document.getElementById('autoStartIndicator').textContent = `Auto-starting in ${countdown}s...`;
-
-function countdownTick() {
-countdown--;
-if (countdown > 0) {
-document.getElementById('autoStartIndicator').textContent = `Auto-starting in ${countdown}s...`;
-autoStartTimeout = setTimeout(countdownTick, 1000);
-} else {
-document.getElementById('autoStartIndicator').textContent = '';
-debug('Auto-start countdown finished - starting timer');
-if (!isRunning) {
-startTimer();
-}
-}
-}
-
-autoStartTimeout = setTimeout(countdownTick, 1000);
-}
-
-// Settings functions
-function updateStudyTime() {
-const value = parseInt(document.getElementById('studySlider').value);
-studyDuration = value * 60;
-document.getElementById('studyValue').textContent = `${value}min`;
-
-if (!isRunning && isStudySession) {
-timeLeft = studyDuration;
-totalTimeForSession = studyDuration;
-updateDisplay();
-}
-debug(`Study time updated to ${value}min (${studyDuration}s)`);
-}
-
-function updateBreakTime() {
-const value = parseInt(document.getElementById('breakSlider').value);
-breakDuration = value * 60;
-document.getElementById('breakValue').textContent = `${value}min`;
-
-if (!isRunning && !isStudySession) {
-timeLeft = breakDuration;
-totalTimeForSession = breakDuration;
-updateDisplay();
-}
-debug(`Break time updated to ${value}min (${breakDuration}s)`);
 }
 
 function saveDefault(type) {
@@ -625,15 +343,191 @@ btn.textContent = 'Saved!';
 setTimeout(() => { btn.textContent = 'Save'; }, 1500);
 }
 
-// Request notification permission
+function createBeep(frequency, duration, type = 'sine') {
+const oscillator = audioContext.createOscillator();
+const gainNode = audioContext.createGain();
+
+oscillator.connect(gainNode);
+gainNode.connect(audioContext.destination);
+
+oscillator.frequency.value = frequency;
+oscillator.type = type;
+
+gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
+oscillator.start(audioContext.currentTime);
+oscillator.stop(audioContext.currentTime + duration);
+}
+
+function playStudyEndSound() {
+createBeep(800, 0.2);
+setTimeout(() => createBeep(800, 0.2), 300);
+}
+
+function playBreakEndSound() {
+createBeep(600, 0.15);
+setTimeout(() => createBeep(700, 0.15), 200);
+setTimeout(() => createBeep(800, 0.2), 400);
+}
+
+function formatTime(seconds) {
+const mins = Math.floor(seconds / 60);
+const secs = seconds % 60;
+return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function updateDisplay() {
+document.getElementById('timerDisplay').textContent = formatTime(timeLeft);
+
+const sessionTypeEl = document.getElementById('sessionType');
+const timerDisplayEl = document.getElementById('timerDisplay');
+
+if (isStudySession) {
+sessionTypeEl.textContent = 'Study Session';
+sessionTypeEl.className = 'session-type study-session';
+timerDisplayEl.className = 'timer-display study-timer';
+} else {
+sessionTypeEl.textContent = 'Break Time';
+sessionTypeEl.className = 'session-type break-session';
+timerDisplayEl.className = 'timer-display break-timer';
+}
+
+const progress = totalTimeForSession > 0 ? ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100 : 0;
+const progressFill = document.getElementById('progressFill');
+progressFill.style.width = `${progress}%`;
+
+if (isStudySession) {
+progressFill.style.background = 'linear-gradient(90deg, #ff6b6b, #ff8e8e)';
+} else {
+progressFill.style.background = 'linear-gradient(90deg, #4ecdc4, #7ed6cc)';
+}
+
+document.title = `${formatTime(timeLeft)} - ${isStudySession ? 'Study' : 'Break'} | Pomodoro Timer`;
+}
+
+function updateStudyTime() {
+const value = parseInt(document.getElementById('studySlider').value);
+studyDuration = value * 60;
+document.getElementById('studyValue').textContent = `${value}min`;
+
+if (!isRunning && isStudySession) {
+timeLeft = studyDuration;
+totalTimeForSession = studyDuration;
+updateDisplay();
+}
+}
+
+function updateBreakTime() {
+const value = parseInt(document.getElementById('breakSlider').value);
+breakDuration = value * 60;
+document.getElementById('breakValue').textContent = `${value}min`;
+
+if (!isRunning && !isStudySession) {
+timeLeft = breakDuration;
+totalTimeForSession = breakDuration;
+updateDisplay();
+}
+}
+
+function toggleTimer() {
+if (isRunning) {
+pauseTimer();
+} else {
+startTimer();
+}
+}
+
+function startTimer() {
+if (audioContext.state === 'suspended') {
+audioContext.resume();
+}
+
+isRunning = true;
+document.getElementById('startBtn').textContent = 'Pause';
+document.getElementById('startBtn').className = 'controls-btn pause-btn'; // Use a general controls-btn class if you have one
+
+timer = setInterval(tick, 1000);
+}
+
+function pauseTimer() {
+isRunning = false;
+if (timer) {
+clearInterval(timer);
+timer = null;
+}
+document.getElementById('startBtn').textContent = 'Resume';
+document.getElementById('startBtn').className = 'controls-btn start-btn';
+}
+
+function resetTimer() {
+if (timer) {
+clearInterval(timer);
+timer = null;
+}
+isRunning = false;
+
+if (isStudySession) {
+timeLeft = studyDuration;
+totalTimeForSession = studyDuration;
+} else {
+// If reset is hit during a break, switch back to study
+isStudySession = true;
+timeLeft = studyDuration;
+totalTimeForSession = studyDuration;
+}
+
+document.getElementById('startBtn').textContent = 'Start';
+document.getElementById('startBtn').className = 'controls-btn start-btn';
+updateDisplay();
+}
+
+// NEW UNIFIED TICK FUNCTION
+function tick() {
+    timeLeft--;
+    updateDisplay();
+
+    if (timeLeft < 0) {
+        clearInterval(timer); // Stop this timer
+
+        if (isStudySession) {
+            playStudyEndSound();
+            completedSessions++;
+            totalStudyTime += Math.floor(studyDuration / 60);
+            if (Notification.permission === 'granted') {
+                new Notification('Study session complete!', { body: 'Time for a break! 🎉', icon: '🍅' });
+            }
+            // Switch to break
+            isStudySession = false;
+            timeLeft = breakDuration;
+            totalTimeForSession = breakDuration;
+        } else {
+            playBreakEndSound();
+            if (Notification.permission === 'granted') {
+                new Notification('Break time over!', { body: 'Ready to focus again? 💪', icon: '📚' });
+            }
+            // Switch to study
+            isStudySession = true;
+            timeLeft = studyDuration;
+            totalTimeForSession = studyDuration;
+        }
+
+        // Update stats on the page
+        document.getElementById('completedSessions').textContent = completedSessions;
+        document.getElementById('totalStudyTime').textContent = `${totalStudyTime}m`;
+        
+        // Automatically start the next session's timer
+        startTimer();
+    }
+}
+
+
 if ('Notification' in window && Notification.permission === 'default') {
 Notification.requestPermission();
 }
 
-// Initialize on load
-initializeTimer();
+loadDefaultsAndInit();
 
-// Warn before closing if timer is running
 window.addEventListener('beforeunload', (e) => {
 if (isRunning) {
 e.preventDefault();
