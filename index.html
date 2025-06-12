@@ -523,11 +523,11 @@ document.getElementById('startBtn').className = 'start-btn';
 
 updateDisplay();
 
+// Auto-start the next session after 3 seconds
 setTimeout(() => {
-                if (!isRunning) {
-                    startTimer();
-                }
-                startTimer();
+if (!isRunning) {
+startTimer();
+}
 }, 3000);
 }
 
