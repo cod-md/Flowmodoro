@@ -134,6 +134,7 @@
             justify-content: space-around;
             margin-bottom: 30px;
             gap: 20px;
+            flex-wrap: wrap;
         }
 
         .setting {
@@ -141,6 +142,7 @@
             flex-direction: column;
             align-items: center;
             flex: 1;
+            min-width: 150px;
         }
 
         .setting label {
@@ -164,6 +166,11 @@
             background: rgba(102, 126, 234, 0.1);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             backdrop-filter: blur(10px);
+        }
+
+        .setting input[type="text"] {
+            width: 150px;
+            font-size: 0.9em;
         }
 
         .setting input:focus {
@@ -340,6 +347,16 @@
                 <input type="number" id="break-time" value="5" min="5" max="15">
             </div>
         </div>
+        <div class="settings">
+            <div class="setting">
+                <label for="study-sound">🎵 Study Sound</label>
+                <input type="text" id="study-sound" placeholder="study_sound.mp3" style="width: 150px; font-size: 0.9em;">
+            </div>
+            <div class="setting">
+                <label for="break-sound">🔔 Break Sound</label>
+                <input type="text" id="break-sound" placeholder="break_sound.mp3" style="width: 150px; font-size: 0.9em;">
+            </div>
+        </div>
         <div class="buttons">
             <button id="start-btn">▶️ SLAY</button>
             <button id="reset-btn">🔄 RESET</button>
@@ -357,6 +374,8 @@
         const resetBtn = document.getElementById('reset-btn');
         const studyTimeInput = document.getElementById('study-time');
         const breakTimeInput = document.getElementById('break-time');
+        const studySoundInput = document.getElementById('study-sound');
+        const breakSoundInput = document.getElementById('break-sound');
         const timerDisplay = document.getElementById('timer-display');
         const modeIndicator = document.getElementById('mode-indicator');
         const quote = document.getElementById('motivational-quote');
@@ -406,6 +425,39 @@
             }
         }
 
+        function playSound(soundType) {
+            const soundPath = soundType === 'study' ? studySoundInput.value : breakSoundInput.value;
+            
+            if (soundPath && soundPath.trim() !== '') {
+                const audio = new Audio(soundPath);
+                audio.play().catch(e => {
+                    console.log('Custom sound failed, using default beep');
+                    playDefaultSound();
+                });
+            } else {
+                playDefaultSound();
+            }
+        }
+
+        function playDefaultSound() {
+            // Create a simple beep sound using Web Audio API
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
         function createSparkleEffect() {
             const sparkle = document.createElement('div');
             sparkle.innerHTML = '✨';
@@ -439,6 +491,11 @@
             updateModeIndicator();
             updateTimerDisplay();
             showRandomQuote();
+            
+            // Play sound when starting a session
+            if (isStudySession) {
+                playSound('study');
+            }
 
             timer = setInterval(() => {
                 if (totalSeconds <= 0) {
@@ -449,6 +506,11 @@
                     // Create celebration effect
                     for (let i = 0; i < 10; i++) {
                         setTimeout(() => createSparkleEffect(), i * 100);
+                    }
+
+                    // Play break sound when study session ends
+                    if (isStudySession) {
+                        playSound('break');
                     }
 
                     setTimeout(() => {
