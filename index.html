@@ -431,16 +431,15 @@
             if (soundPath && soundPath.trim() !== '') {
                 const audio = new Audio(soundPath);
                 audio.play().catch(e => {
-                    console.log('Custom sound failed, using default beep');
-                    playDefaultSound();
+                    console.log('Custom sound failed, using default sound');
+                    playDefaultSound(soundType);
                 });
             } else {
-                playDefaultSound();
+                playDefaultSound(soundType);
             }
         }
 
-        function playDefaultSound() {
-            // Create a simple beep sound using Web Audio API
+        function playDefaultSound(soundType = 'study') {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -448,14 +447,42 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
             
-            oscillator.frequency.value = 800;
-            oscillator.type = 'sine';
-            
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.5);
+            if (soundType === 'break') {
+                // Break sound: Pleasant chime-like sound (C-E-G chord)
+                const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5
+                const oscillators = [];
+                const gainNodes = [];
+                
+                frequencies.forEach((freq, index) => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    
+                    osc.frequency.value = freq;
+                    osc.type = 'sine';
+                    
+                    gain.gain.setValueAtTime(0.15, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.5);
+                    
+                    osc.start(audioContext.currentTime + (index * 0.1));
+                    osc.stop(audioContext.currentTime + 1.5);
+                    
+                    oscillators.push(osc);
+                    gainNodes.push(gain);
+                });
+            } else {
+                // Study sound: Simple single beep
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            }
         }
 
         function createSparkleEffect() {
@@ -492,26 +519,29 @@
             updateTimerDisplay();
             showRandomQuote();
             
-            // Play sound when starting a session
-            if (isStudySession) {
-                playSound('study');
-            }
+            // Don't play sound when manually starting - only when transitioning between sessions
 
             timer = setInterval(() => {
                 if (totalSeconds <= 0) {
                     clearInterval(timer);
                     isRunning = false;
-                    isStudySession = !isStudySession;
                     
                     // Create celebration effect
                     for (let i = 0; i < 10; i++) {
                         setTimeout(() => createSparkleEffect(), i * 100);
                     }
 
-                    // Play break sound when study session ends
+                    // Play appropriate sound BEFORE switching sessions
                     if (isStudySession) {
+                        // Study session just ended, break is starting
                         playSound('break');
+                    } else {
+                        // Break session just ended, study is starting
+                        playSound('study');
                     }
+                    
+                    // Switch to the next session type
+                    isStudySession = !isStudySession;
 
                     setTimeout(() => {
                         totalSeconds = undefined;
