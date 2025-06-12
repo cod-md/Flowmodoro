@@ -72,7 +72,7 @@
         }
 
         h1 {
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -81,6 +81,28 @@
             font-weight: 800;
             letter-spacing: -0.02em;
             position: relative;
+        }
+
+        .mode-indicator {
+            margin-bottom: 20px;
+            padding: 12px 24px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 25px;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #4CAF50;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .mode-indicator.break-mode {
+            background: rgba(33, 150, 243, 0.1);
+            color: #2196F3;
+            border-color: rgba(33, 150, 243, 0.2);
         }
 
         .timer-display {
@@ -283,29 +305,6 @@
             50% { transform: scale(1.2); }
         }
 
-        .mode-indicator {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            padding: 8px 16px;
-            background: rgba(76, 175, 80, 0.1);
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #4CAF50;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(76, 175, 80, 0.2);
-            transition: all 0.3s ease;
-        }
-
-        .mode-indicator.break-mode {
-            background: rgba(33, 150, 243, 0.1);
-            color: #2196F3;
-            border-color: rgba(33, 150, 243, 0.2);
-        }
-
         /* Responsive design */
         @media (max-width: 480px) {
             .container {
@@ -319,6 +318,13 @@
             
             h1 {
                 font-size: 2em;
+                margin-bottom: 15px;
+            }
+
+            .mode-indicator {
+                font-size: 0.8em;
+                padding: 10px 20px;
+                margin-bottom: 15px;
             }
             
             .settings {
@@ -336,9 +342,10 @@
 <body>
     <div class="container">
         <div class="status-indicator"></div>
-        <div class="mode-indicator" id="mode-indicator">STUDY TIME</div>
         
         <h1>Pomodoro Timer</h1>
+        <div class="mode-indicator" id="mode-indicator">STUDY TIME</div>
+        
         <div class="timer-display" id="timer-display">
             <span id="minutes">25</span>:<span id="seconds">00</span>
         </div>
