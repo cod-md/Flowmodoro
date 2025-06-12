@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pomodoro Timer</title>
+    <title>Pomodoro Pro Timer</title>
     <style>
         * {
             margin: 0;
@@ -230,7 +230,7 @@
 <body>
 
     <div class="container">
-        <h1>🍅 Pomodoro Timer</h1>
+        <h1>🍅 Pomodoro Pro</h1>
 
         <div class="session-type" id="sessionType">Choose a duration</div>
         <div class="timer-display" id="timerDisplay">25:00</div>
@@ -249,7 +249,7 @@
                 <h3>Study Time</h3>
                 <div class="setting-control-wrapper">
                     <div class="time-input">
-                        <input type="range" id="studySlider" min="25" max="60" value="25">
+                        <input type="range" id="studySlider" min="1" max="60" value="25">
                         <span class="time-value" id="studyValue">25 min</span>
                     </div>
                     <button id="saveStudyBtn" class="save-btn">Save</button>
@@ -259,7 +259,7 @@
                 <h3>Break Time</h3>
                 <div class="setting-control-wrapper">
                     <div class="time-input">
-                        <input type="range" id="breakSlider" min="5" max="15" value="5">
+                        <input type="range" id="breakSlider" min="1" max="15" value="5">
                         <span class="time-value" id="breakValue">5 min</span>
                     </div>
                     <button id="saveBreakBtn" class="save-btn">Save</button>
@@ -269,239 +269,4 @@
 
         <div class="stats">
             <h3>Session Stats</h3>
-            <p>Completed Sessions: <span id="completedSessions">0</span></p>
-            <p>Total Study Time: <span id="totalStudyTime">0 min</span></p>
-        </div>
-    </div>
-    
-    <audio id="study-sound" src="study_sound.mp3" preload="auto"></audio>
-    <audio id="break-sound" src="break_sound.mp3" preload="auto"></audio>
-
-    <script>
-        // DOM Elements
-        const timerDisplay = document.getElementById('timerDisplay');
-        const sessionTypeEl = document.getElementById('sessionType');
-        const progressFill = document.getElementById('progressFill');
-        const startBtn = document.getElementById('startBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const studySlider = document.getElementById('studySlider');
-        const breakSlider = document.getElementById('breakSlider');
-        const studyValue = document.getElementById('studyValue');
-        const breakValue = document.getElementById('breakValue');
-        const saveStudyBtn = document.getElementById('saveStudyBtn');
-        const saveBreakBtn = document.getElementById('saveBreakBtn');
-        const completedSessionsEl = document.getElementById('completedSessions');
-        const totalStudyTimeEl = document.getElementById('totalStudyTime');
-        const studySound = document.getElementById('study-sound');
-        const breakSound = document.getElementById('break-sound');
-
-        // Timer State
-        let timer = null;
-        let isRunning = false;
-        let isStudySession = true;
-        let studyDuration = 25 * 60;
-        let breakDuration = 5 * 60;
-        let timeLeft = studyDuration;
-        let totalTimeForSession = studyDuration;
-        
-        // Stats
-        let completedSessions = 0;
-        let totalStudyMinutes = 0;
-        
-        // --- Core Functions ---
-
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        }
-
-        function updateDisplay() {
-            timerDisplay.textContent = formatTime(timeLeft);
-            const progress = totalTimeForSession > 0 ? ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100 : 0;
-            progressFill.style.width = `${progress}%`;
-
-            if (isStudySession) {
-                sessionTypeEl.textContent = 'Study Session';
-                sessionTypeEl.className = 'session-type study-session';
-                timerDisplay.className = 'timer-display study-timer';
-                progressFill.style.background = 'linear-gradient(90deg, #ff6b6b, #ff8e8e)';
-            } else {
-                sessionTypeEl.textContent = 'Break Time';
-                sessionTypeEl.className = 'session-type break-session';
-                timerDisplay.className = 'timer-display break-timer';
-                progressFill.style.background = 'linear-gradient(90deg, #4ecdc4, #7ed6cc)';
-            }
             
-            document.title = `${formatTime(timeLeft)} - ${isStudySession ? 'Study' : 'Break'}`;
-        }
-
-        function tick() {
-            if (timeLeft <= 0) {
-                clearInterval(timer);
-                
-                if (isStudySession) {
-                    // --- STUDY SESSION ENDS ---
-                    isStudySession = false;
-                    completedSessions++;
-                    totalStudyMinutes += Math.floor(studyDuration / 60);
-                    timeLeft = breakDuration;
-                    totalTimeForSession = breakDuration;
-                    breakSound.play();
-                    showNotification('Study session complete!', 'Time for a break! 🎉');
-                } else {
-                    // --- BREAK SESSION ENDS ---
-                    isStudySession = true;
-                    timeLeft = studyDuration;
-                    totalTimeForSession = studyDuration;
-                    studySound.play();
-                    showNotification('Break time over!', 'Ready to focus again? 💪');
-                }
-                
-                // Update stats and display, then automatically start the next session
-                updateStatsDisplay();
-                updateDisplay();
-                startTimer(); 
-                return;
-            }
-
-            timeLeft--;
-            updateDisplay();
-        }
-
-        function startTimer() {
-            isRunning = true;
-            startBtn.textContent = 'Pause';
-            startBtn.className = 'pause-btn';
-            disableSettings();
-            timer = setInterval(tick, 1000);
-        }
-
-        function pauseTimer() {
-            isRunning = false;
-            clearInterval(timer);
-            startBtn.textContent = 'Resume';
-            startBtn.className = 'start-btn';
-        }
-
-        function resetTimer() {
-            clearInterval(timer);
-            isRunning = false;
-            isStudySession = true; // Always reset to a study session
-            timeLeft = studyDuration;
-            totalTimeForSession = studyDuration;
-            
-            startBtn.textContent = 'Start';
-            startBtn.className = 'start-btn';
-            enableSettings();
-            updateDisplay();
-        }
-
-        function toggleTimer() {
-            if (isRunning) {
-                pauseTimer();
-            } else {
-                startTimer();
-            }
-        }
-        
-        // --- Settings & UI ---
-
-        function updateSettings(type) {
-            if (type === 'study') {
-                const value = parseInt(studySlider.value);
-                studyDuration = value * 60;
-                studyValue.textContent = `${value} min`;
-                if (isStudySession && !isRunning) {
-                    resetTimer();
-                }
-            } else {
-                const value = parseInt(breakSlider.value);
-                breakDuration = value * 60;
-                breakValue.textContent = `${value} min`;
-                if (!isStudySession && !isRunning) {
-                   resetTimer();
-                }
-            }
-        }
-        
-        function saveDefault(type) {
-            const isStudy = type === 'study';
-            const slider = isStudy ? studySlider : breakSlider;
-            const key = isStudy ? 'defaultStudyTime' : 'defaultBreakTime';
-            const btn = isStudy ? saveStudyBtn : saveBreakBtn;
-
-            localStorage.setItem(key, slider.value);
-            btn.textContent = 'Saved!';
-            setTimeout(() => { btn.textContent = 'Save'; }, 1500);
-        }
-
-        function loadDefaults() {
-            const defaultStudy = parseInt(localStorage.getItem('defaultStudyTime') || '25');
-            const defaultBreak = parseInt(localStorage.getItem('defaultBreakTime') || '5');
-
-            studySlider.value = defaultStudy;
-            breakSlider.value = defaultBreak;
-            
-            updateSettings('study');
-            updateSettings('break');
-            resetTimer(); // Initialize the timer with loaded values
-        }
-        
-        function disableSettings() {
-            studySlider.disabled = true;
-            breakSlider.disabled = true;
-            saveStudyBtn.disabled = true;
-            saveBreakBtn.disabled = true;
-        }
-
-        function enableSettings() {
-            studySlider.disabled = false;
-            breakSlider.disabled = false;
-            saveStudyBtn.disabled = false;
-            saveBreakBtn.disabled = false;
-        }
-        
-        function updateStatsDisplay() {
-            completedSessionsEl.textContent = completedSessions;
-            totalStudyTimeEl.textContent = `${totalStudyMinutes} min`;
-        }
-
-        function showNotification(title, body) {
-            if (!('Notification' in window)) return;
-            
-            if (Notification.permission === 'granted') {
-                new Notification(title, { body: body, icon: '🍅' });
-            } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        new Notification(title, { body: body, icon: '🍅' });
-                    }
-                });
-            }
-        }
-        
-        // --- Event Listeners & Initialization ---
-
-        startBtn.addEventListener('click', toggleTimer);
-        resetBtn.addEventListener('click', resetTimer);
-        
-        studySlider.addEventListener('input', () => updateSettings('study'));
-        breakSlider.addEventListener('input', () => updateSettings('break'));
-        
-        saveStudyBtn.addEventListener('click', () => saveDefault('study'));
-        saveBreakBtn.addEventListener('click', () => saveDefault('break'));
-
-        window.addEventListener('beforeunload', (e) => {
-            if (isRunning) {
-                e.preventDefault();
-                e.returnValue = 'The timer is still running. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        });
-
-        // Load saved settings and initialize the display
-        loadDefaults();
-    </script>
-</body>
-</html>
