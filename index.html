@@ -58,6 +58,43 @@
             text-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
         }
 
+        .mini-countdown {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(78, 205, 196, 0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+            z-index: 1000;
+            animation: pulse 2s infinite;
+        }
+
+        .mini-countdown.visible {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.8; transform: scale(1); }
+        }
+
+        @media (max-width: 600px) {
+            .mini-countdown {
+                top: 10px;
+                right: 10px;
+                font-size: 1rem;
+                padding: 8px 12px;
+            }
+        }
+
         .session-type {
             font-size: 1.5rem;
             margin-bottom: 20px;
@@ -207,7 +244,25 @@
             transition: width 0.1s ease;
         }
 
-        @media (max-width: 600px) {
+        .save-settings {
+            margin: 20px 0;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .save-settings button {
+            background: rgba(50, 205, 50, 0.6);
+            border-color: rgba(50, 205, 50, 0.8);
+            font-size: 1rem;
+            padding: 12px 20px;
+        }
+
+        .save-settings button:nth-child(2) {
+            background: rgba(255, 165, 0, 0.6);
+            border-color: rgba(255, 165, 0, 0.8);
+        }
             .container {
                 padding: 20px;
             }
@@ -227,6 +282,10 @@
     </style>
 </head>
 <body>
+    <div class="mini-countdown" id="miniCountdown">
+        Break: 5:00
+    </div>
+
     <div class="container">
         <h1>🍅 Pomodoro Timer</h1>
         
@@ -259,6 +318,11 @@
             </div>
         </div>
         
+        <div class="save-settings">
+            <button id="saveBtn" onclick="saveSettings()">💾 Save as Default</button>
+            <button id="resetDefaultsBtn" onclick="resetToDefaults()">🔄 Reset to Defaults</button>
+        </div>
+        
         <div class="stats">
             <h3>Session Stats</h3>
             <p>Completed Sessions: <span id="completedSessions">0</span></p>
@@ -279,6 +343,124 @@
 
         // Audio contexts for different sounds
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Load saved data on page load
+        function loadSavedData() {
+            // Load settings
+            const savedStudyTime = sessionStorage.getItem('pomodoroStudyTime');
+            const savedBreakTime = sessionStorage.getItem('pomodoroBreakTime');
+            
+            if (savedStudyTime) {
+                studyDuration = parseInt(savedStudyTime) * 60;
+                document.getElementById('studySlider').value = savedStudyTime;
+                document.getElementById('studyValue').textContent = `${savedStudyTime}min`;
+            }
+            
+            if (savedBreakTime) {
+                breakDuration = parseInt(savedBreakTime) * 60;
+                document.getElementById('breakSlider').value = savedBreakTime;
+                document.getElementById('breakValue').textContent = `${savedBreakTime}min`;
+            }
+            
+            // Load session data
+            const savedCompletedSessions = sessionStorage.getItem('pomodoroCompletedSessions');
+            const savedTotalStudyTime = sessionStorage.getItem('pomodoroTotalStudyTime');
+            const savedIsStudySession = sessionStorage.getItem('pomodoroIsStudySession');
+            const savedTimeLeft = sessionStorage.getItem('pomodoroTimeLeft');
+            
+            if (savedCompletedSessions) {
+                completedSessions = parseInt(savedCompletedSessions);
+            }
+            
+            if (savedTotalStudyTime) {
+                totalStudyTime = parseInt(savedTotalStudyTime);
+            }
+            
+            if (savedIsStudySession !== null) {
+                isStudySession = savedIsStudySession === 'true';
+            }
+            
+            if (savedTimeLeft) {
+                timeLeft = parseInt(savedTimeLeft);
+            } else {
+                // Set initial time based on current session type
+                timeLeft = isStudySession ? studyDuration : breakDuration;
+            }
+            
+            totalTimeForSession = isStudySession ? studyDuration : breakDuration;
+            
+            // Update display
+            document.getElementById('completedSessions').textContent = completedSessions;
+            document.getElementById('totalStudyTime').textContent = `${totalStudyTime}m`;
+            updateDisplay();
+        }
+        
+        // Save data to sessionStorage
+        function saveData() {
+            sessionStorage.setItem('pomodoroCompletedSessions', completedSessions);
+            sessionStorage.setItem('pomodoroTotalStudyTime', totalStudyTime);
+            sessionStorage.setItem('pomodoroIsStudySession', isStudySession);
+            sessionStorage.setItem('pomodoroTimeLeft', timeLeft);
+        }
+        
+        // Save settings as default
+        function saveSettings() {
+            const studyTime = document.getElementById('studySlider').value;
+            const breakTime = document.getElementById('breakSlider').value;
+            
+            sessionStorage.setItem('pomodoroStudyTime', studyTime);
+            sessionStorage.setItem('pomodoroBreakTime', breakTime);
+            
+            // Show confirmation
+            const saveBtn = document.getElementById('saveBtn');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = '✅ Saved!';
+            saveBtn.style.background = 'rgba(50, 205, 50, 0.8)';
+            
+            setTimeout(() => {
+                saveBtn.textContent = originalText;
+                saveBtn.style.background = 'rgba(50, 205, 50, 0.6)';
+            }, 2000);
+        }
+        
+        // Reset to default settings
+        function resetToDefaults() {
+            sessionStorage.removeItem('pomodoroStudyTime');
+            sessionStorage.removeItem('pomodoroBreakTime');
+            
+            // Reset sliders to default values
+            document.getElementById('studySlider').value = 25;
+            document.getElementById('breakSlider').value = 5;
+            
+            studyDuration = 25 * 60;
+            breakDuration = 5 * 60;
+            
+            document.getElementById('studyValue').textContent = '25min';
+            document.getElementById('breakValue').textContent = '5min';
+            
+            // Reset current timer if not running
+            if (!isRunning) {
+                if (isStudySession) {
+                    timeLeft = studyDuration;
+                    totalTimeForSession = studyDuration;
+                } else {
+                    timeLeft = breakDuration;
+                    totalTimeForSession = breakDuration;
+                }
+                updateDisplay();
+            }
+            
+            // Show confirmation
+            const resetBtn = document.getElementById('resetDefaultsBtn');
+            const originalText = resetBtn.textContent;
+            resetBtn.textContent = '✅ Reset!';
+            resetBtn.style.background = 'rgba(50, 205, 50, 0.8)';
+            
+            setTimeout(() => {
+                resetBtn.textContent = originalText;
+                resetBtn.style.background = 'rgba(255, 165, 0, 0.6)';
+            }, 2000);
+        }
         
         function createBeep(frequency, duration, type = 'sine') {
             const oscillator = audioContext.createOscillator();
@@ -321,15 +503,23 @@
             
             const sessionTypeEl = document.getElementById('sessionType');
             const timerDisplayEl = document.getElementById('timerDisplay');
+            const miniCountdownEl = document.getElementById('miniCountdown');
             
             if (isStudySession) {
                 sessionTypeEl.textContent = 'Study Session';
                 sessionTypeEl.className = 'session-type study-session';
                 timerDisplayEl.className = 'timer-display study-timer';
+                
+                // Hide mini countdown during study
+                miniCountdownEl.classList.remove('visible');
             } else {
                 sessionTypeEl.textContent = 'Break Time';
                 sessionTypeEl.className = 'session-type break-session';
                 timerDisplayEl.className = 'timer-display break-timer';
+                
+                // Show mini countdown during break
+                miniCountdownEl.textContent = `Break: ${formatTime(timeLeft)}`;
+                miniCountdownEl.classList.add('visible');
             }
             
             // Update progress bar with different colors
@@ -392,6 +582,7 @@
             timer = setInterval(() => {
                 timeLeft--;
                 updateDisplay();
+                saveData(); // Save progress every second
                 
                 if (timeLeft <= 0) {
                     completeSession();
@@ -400,103 +591,4 @@
         }
 
         function pauseTimer() {
-            isRunning = false;
-            clearInterval(timer);
-            document.getElementById('startBtn').textContent = 'Resume';
-            document.getElementById('startBtn').className = 'start-btn';
-        }
-
-        function resetTimer() {
-            isRunning = false;
-            clearInterval(timer);
-            
-            if (isStudySession) {
-                timeLeft = studyDuration;
-                totalTimeForSession = studyDuration;
-            } else {
-                timeLeft = breakDuration;
-                totalTimeForSession = breakDuration;
-            }
-            
-            document.getElementById('startBtn').textContent = 'Start';
-            document.getElementById('startBtn').className = 'start-btn';
-            updateDisplay();
-        }
-
-        function completeSession() {
-            clearInterval(timer);
-            isRunning = false;
-            
-            if (isStudySession) {
-                // Study session completed
-                playStudyEndSound();
-                completedSessions++;
-                totalStudyTime += Math.floor(studyDuration / 60);
-                
-                // Switch to break
-                isStudySession = false;
-                timeLeft = breakDuration;
-                totalTimeForSession = breakDuration;
-                
-                // Show notification
-                if (Notification.permission === 'granted') {
-                    new Notification('Study session complete!', {
-                        body: 'Time for a break! 🎉',
-                        icon: '🍅'
-                    });
-                }
-            } else {
-                // Break completed
-                playBreakEndSound();
-                
-                // Switch to study
-                isStudySession = true;
-                timeLeft = studyDuration;
-                totalTimeForSession = studyDuration;
-                
-                // Show notification
-                if (Notification.permission === 'granted') {
-                    new Notification('Break time over!', {
-                        body: 'Ready to focus again? 💪',
-                        icon: '📚'
-                    });
-                }
-            }
-            
-            // Update stats
-            document.getElementById('completedSessions').textContent = completedSessions;
-            document.getElementById('totalStudyTime').textContent = `${totalStudyTime}m`;
-            
-            // Reset button state
-            document.getElementById('startBtn').textContent = 'Start';
-            document.getElementById('startBtn').className = 'start-btn';
-            
-            updateDisplay();
-            
-            // Auto-start next session after 3 seconds
-            setTimeout(() => {
-                if (!isRunning) {
-                    startTimer();
-                }
-            }, 3000);
-        }
-
-        // Request notification permission
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-
-        // Initialize display
-        updateDisplay();
-        
-        // Prevent page refresh during active timer
-        window.addEventListener('beforeunload', (e) => {
-            if (isRunning) {
-                e.preventDefault();
-                e.returnValue = 'Timer is running. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        });
-    </script>
-</body>
-</html>
+    
