@@ -65,14 +65,15 @@
             border-radius: 25px;
             display: inline-block;
             font-weight: bold;
+            transition: background 0.3s ease;
         }
 
         .study-session {
-            background: rgba(255, 99, 71, 0.8);
+            background: rgba(255, 107, 107, 0.8);
         }
 
         .break-session {
-            background: rgba(50, 205, 50, 0.8);
+            background: rgba(78, 205, 196, 0.8);
         }
 
         .controls {
@@ -202,9 +203,10 @@
 
         .progress-fill {
             height: 100%;
+            width: 0%;
             background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
             border-radius: 4px;
-            transition: width 0.1s ease;
+            transition: width 0.1s ease, background 0.5s ease;
         }
 
         @media (max-width: 600px) {
@@ -270,17 +272,23 @@
         let timer = null;
         let isRunning = false;
         let isStudySession = true;
-        let timeLeft = 25 * 60; // 25 minutes in seconds
+        
         let studyDuration = 25 * 60;
         let breakDuration = 5 * 60;
+        
+        let timeLeft = studyDuration;
         let totalTimeForSession = studyDuration;
+        
         let completedSessions = 0;
         let totalStudyTime = 0;
 
-        // Audio contexts for different sounds
+        // Using AudioContext for pleasant, non-intrusive sounds without needing audio files
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         
         function createBeep(frequency, duration, type = 'sine') {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
@@ -298,22 +306,20 @@
         }
 
         function playStudyEndSound() {
-            // Double beep for study end (going to break)
-            createBeep(800, 0.2);
-            setTimeout(() => createBeep(800, 0.2), 300);
+            createBeep(800, 0.2, 'triangle');
+            setTimeout(() => createBeep(800, 0.2, 'triangle'), 300);
         }
 
         function playBreakEndSound() {
-            // Triple ascending beep for break end (going to study)
-            createBeep(600, 0.15);
-            setTimeout(() => createBeep(700, 0.15), 200);
-            setTimeout(() => createBeep(800, 0.2), 400);
+            createBeep(600, 0.15, 'sine');
+            setTimeout(() => createBeep(700, 0.15, 'sine'), 200);
+            setTimeout(() => createBeep(800, 0.2, 'sine'), 400);
         }
 
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
 
         function updateDisplay() {
@@ -321,30 +327,24 @@
             
             const sessionTypeEl = document.getElementById('sessionType');
             const timerDisplayEl = document.getElementById('timerDisplay');
+            const progressFill = document.getElementById('progressFill');
             
             if (isStudySession) {
                 sessionTypeEl.textContent = 'Study Session';
                 sessionTypeEl.className = 'session-type study-session';
                 timerDisplayEl.className = 'timer-display study-timer';
+                progressFill.style.background = 'linear-gradient(90deg, #ff6b6b, #ff8e8e)';
             } else {
                 sessionTypeEl.textContent = 'Break Time';
                 sessionTypeEl.className = 'session-type break-session';
                 timerDisplayEl.className = 'timer-display break-timer';
-            }
-            
-            // Update progress bar with different colors
-            const progress = ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100;
-            const progressFill = document.getElementById('progressFill');
-            progressFill.style.width = `${progress}%`;
-            
-            if (isStudySession) {
-                progressFill.style.background = 'linear-gradient(90deg, #ff6b6b, #ff8e8e)';
-            } else {
                 progressFill.style.background = 'linear-gradient(90deg, #4ecdc4, #7ed6cc)';
             }
             
-            // Update document title for notifications
-            document.title = `${formatTime(timeLeft)} - ${isStudySession ? 'Study' : 'Break'} | Pomodoro Timer`;
+            const progress = ((totalTimeForSession - timeLeft) / totalTimeForSession) * 100;
+            progressFill.style.width = `${progress}%`;
+            
+            document.title = `${formatTime(timeLeft)} - ${isStudySession ? 'Study' : 'Break'} | Pomodoro`;
         }
 
         function updateStudyTime() {
@@ -380,20 +380,19 @@
         }
 
         function startTimer() {
-            // Request audio context permission on first user interaction
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
             }
             
             isRunning = true;
             document.getElementById('startBtn').textContent = 'Pause';
-            document.getElementById('startBtn').className = 'pause-btn';
+            document.getElementById('startBtn').className = 'controls-btn pause-btn';
             
             timer = setInterval(() => {
                 timeLeft--;
                 updateDisplay();
                 
-                if (timeLeft <= 0) {
+                if (timeLeft < 0) {
                     completeSession();
                 }
             }, 1000);
@@ -403,13 +402,14 @@
             isRunning = false;
             clearInterval(timer);
             document.getElementById('startBtn').textContent = 'Resume';
-            document.getElementById('startBtn').className = 'start-btn';
+            document.getElementById('startBtn').className = 'controls-btn start-btn';
         }
 
         function resetTimer() {
             isRunning = false;
             clearInterval(timer);
             
+            // Reset to the beginning of the CURRENT session type
             if (isStudySession) {
                 timeLeft = studyDuration;
                 totalTimeForSession = studyDuration;
@@ -419,7 +419,7 @@
             }
             
             document.getElementById('startBtn').textContent = 'Start';
-            document.getElementById('startBtn').className = 'start-btn';
+            document.getElementById('startBtn').className = 'controls-btn start-btn';
             updateDisplay();
         }
 
@@ -428,7 +428,6 @@
             isRunning = false;
             
             if (isStudySession) {
-                // Study session completed
                 playStudyEndSound();
                 completedSessions++;
                 totalStudyTime += Math.floor(studyDuration / 60);
@@ -438,15 +437,13 @@
                 timeLeft = breakDuration;
                 totalTimeForSession = breakDuration;
                 
-                // Show notification
                 if (Notification.permission === 'granted') {
-                    new Notification('Study session complete!', {
-                        body: 'Time for a break! 🎉',
-                        icon: '🍅'
+                    new Notification('Study complete!', {
+                        body: 'Great work! Time for a break. 🎉',
+                        icon: 'https://img.icons8.com/plasticine/100/000000/tomato.png'
                     });
                 }
             } else {
-                // Break completed
                 playBreakEndSound();
                 
                 // Switch to study
@@ -454,49 +451,23 @@
                 timeLeft = studyDuration;
                 totalTimeForSession = studyDuration;
                 
-                // Show notification
                 if (Notification.permission === 'granted') {
-                    new Notification('Break time over!', {
-                        body: 'Ready to focus again? 💪',
-                        icon: '📚'
+                    new Notification('Break is over!', {
+                        body: 'Time to get back to it. You got this! 💪',
+                        icon: 'https://img.icons8.com/plasticine/100/000000/book.png'
                     });
                 }
             }
             
-            // Update stats
             document.getElementById('completedSessions').textContent = completedSessions;
             document.getElementById('totalStudyTime').textContent = `${totalStudyTime}m`;
             
-            // Reset button state
             document.getElementById('startBtn').textContent = 'Start';
-            document.getElementById('startBtn').className = 'start-btn';
+            document.getElementById('startBtn').className = 'controls-btn start-btn';
             
             updateDisplay();
             
-            // Auto-start next session after 3 seconds
+            // Auto-start next session after a 3-second delay
             setTimeout(() => {
-                if (!isRunning) {
-                    startTimer();
-                }
-            }, 3000);
-        }
-
-        // Request notification permission
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-
-        // Initialize display
-        updateDisplay();
-        
-        // Prevent page refresh during active timer
-        window.addEventListener('beforeunload', (e) => {
-            if (isRunning) {
-                e.preventDefault();
-                e.returnValue = 'Timer is running. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        });
-    </script>
-</body>
-</html>
+                if (!isRunning
+                    
