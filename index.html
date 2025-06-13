@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flowmodoro Timer</title>
     <style>
-        /* Your CSS remains the same */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
         
         * {
@@ -26,7 +25,8 @@
             overflow-x: hidden;
         }
 
-        /* Animated background particles */
+        /* --- MODIFICATION IS HERE --- */
+        /* Animated background particles are now STATIC */
         body::before {
             content: '';
             position: fixed;
@@ -38,14 +38,11 @@
                 radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
-            animation: float 20s ease-in-out infinite;
             pointer-events: none;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(180deg); }
-        }
+        /* The @keyframes float block has been deleted */
+        /* --- END OF MODIFICATION --- */
 
         .container {
             background: rgba(255, 255, 255, 0.95);
@@ -228,7 +225,6 @@
             100% { transform: scale(1); }
         }
 
-        /* Hidden sound inputs - keep for functionality but hide from view */
         .hidden-sound-inputs {
             display: none;
         }
@@ -306,7 +302,6 @@
             50% { transform: scale(1.2); }
         }
 
-        /* Responsive design */
         @media (max-width: 480px) {
             .container {
                 padding: 30px 20px;
@@ -381,8 +376,10 @@
             <button id="reset-btn">RESET</button>
         </div>
     </div>
-    
+
     <script>
+        // The Javascript does not need to be changed for this request.
+        // It's copied from your previous version that uses a Web Worker.
         const minutesElement = document.getElementById('minutes');
         const secondsElement = document.getElementById('seconds');
         const startBtn = document.getElementById('start-btn');
@@ -399,21 +396,16 @@
         let isRunning = false;
         let timerWorker;
 
-        // Function to initialize the Web Worker
         function initializeWorker() {
             if (window.Worker) {
                 timerWorker = new Worker('timer-worker.js');
-
-                // Listen for messages from the worker
                 timerWorker.onmessage = (e) => {
                     const { type, totalSeconds, isStudySession } = e.data;
                     
                     if (type === 'tick') {
                         updateTimerDisplay(totalSeconds);
                     } else if (type === 'sessionEnd') {
-                        // Play sound based on the session that just ended
                         playSound(isStudySession ? 'break' : 'study');
-                        // The worker will automatically start the next session
                     } else if (type === 'modeUpdate') {
                         updateModeIndicator(isStudySession);
                         if (isStudySession) {
@@ -466,10 +458,8 @@
                 command: 'reset',
                 studyTime: parseInt(studyTimeInput.value)
             });
-            // The worker will post a message back to update the display
         }
         
-        // --- Sound and Settings Functions (Unchanged) ---
         function playSound(soundType) {
             const soundPath = soundType === 'study' ? studySoundInput.value : breakSoundInput.value;
             if (soundPath && soundPath.trim() !== '') {
@@ -545,7 +535,6 @@
             }, 1500);
         }
 
-        // --- Event Listeners ---
         startBtn.addEventListener('click', handleStartClick);
         resetBtn.addEventListener('click', resetTimer);
         saveStudyBtn.addEventListener('click', saveStudyTime);
@@ -553,12 +542,10 @@
         studyTimeInput.addEventListener('change', () => { if (!isRunning) resetTimer(); });
         breakTimeInput.addEventListener('change', () => { if (!isRunning) resetTimer(); });
 
-        // --- Initialize on Page Load ---
         document.addEventListener('DOMContentLoaded', () => {
             initializeWorker();
             loadSettings();
             
-            // Set initial state without starting the timer
             const initialStudyTime = parseInt(studyTimeInput.value) * 60;
             updateTimerDisplay(initialStudyTime);
             updateModeIndicator(true);
