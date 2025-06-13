@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flowmodoro Timer</title>
     <style>
+        /* Your CSS remains the same */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
         
         * {
@@ -365,7 +366,6 @@
                 </div>
             </div>
         </div>
-        <!-- Hidden sound inputs - removed from view but kept for functionality -->
         <div class="hidden-sound-inputs">
             <div class="setting">
                 <label for="study-sound">Study Sound</label>
@@ -381,7 +381,7 @@
             <button id="reset-btn">RESET</button>
         </div>
     </div>
-
+    
     <script>
         const minutesElement = document.getElementById('minutes');
         const secondsElement = document.getElementById('seconds');
@@ -396,58 +396,47 @@
         const saveStudyBtn = document.getElementById('save-study-btn');
         const saveBreakBtn = document.getElementById('save-break-btn');
 
-        let timer;
-        let isStudySession = true;
         let isRunning = false;
-        let totalSeconds;
+        let timerWorker;
 
-        // Load saved settings on page load
-        function loadSettings() {
-            const savedStudyTime = localStorage.getItem('pomodoro-study-time');
-            const savedBreakTime = localStorage.getItem('pomodoro-break-time');
-            
-            if (savedStudyTime) {
-                studyTimeInput.value = savedStudyTime;
+        // Function to initialize the Web Worker
+        function initializeWorker() {
+            if (window.Worker) {
+                timerWorker = new Worker('timer-worker.js');
+
+                // Listen for messages from the worker
+                timerWorker.onmessage = (e) => {
+                    const { type, totalSeconds, isStudySession } = e.data;
+                    
+                    if (type === 'tick') {
+                        updateTimerDisplay(totalSeconds);
+                    } else if (type === 'sessionEnd') {
+                        // Play sound based on the session that just ended
+                        playSound(isStudySession ? 'break' : 'study');
+                        // The worker will automatically start the next session
+                    } else if (type === 'modeUpdate') {
+                        updateModeIndicator(isStudySession);
+                        if (isStudySession) {
+                            startBtn.innerHTML = 'PAUSE';
+                            isRunning = true;
+                        }
+                    }
+                };
+            } else {
+                console.error("Your browser doesn't support Web Workers.");
+                alert("Your browser doesn't support Web Workers, the timer may not work in the background.");
             }
-            if (savedBreakTime) {
-                breakTimeInput.value = savedBreakTime;
-            }
         }
 
-        // Save study time setting
-        function saveStudyTime() {
-            const studyTime = studyTimeInput.value;
-            localStorage.setItem('pomodoro-study-time', studyTime);
-            showSaveSuccess(saveStudyBtn);
-        }
-
-        // Save break time setting
-        function saveBreakTime() {
-            const breakTime = breakTimeInput.value;
-            localStorage.setItem('pomodoro-break-time', breakTime);
-            showSaveSuccess(saveBreakBtn);
-        }
-
-        // Show save success animation
-        function showSaveSuccess(button) {
-            button.classList.add('saved');
-            button.textContent = 'SAVED';
-            
-            setTimeout(() => {
-                button.classList.remove('saved');
-                button.textContent = 'SAVE';
-            }, 1500);
-        }
-
-        function updateTimerDisplay() {
+        function updateTimerDisplay(totalSeconds) {
             const mins = Math.floor(totalSeconds / 60);
             const secs = totalSeconds % 60;
             minutesElement.textContent = String(mins).padStart(2, '0');
             secondsElement.textContent = String(secs).padStart(2, '0');
         }
 
-        function updateModeIndicator() {
-            if (isStudySession) {
+        function updateModeIndicator(isStudy) {
+            if (isStudy) {
                 modeIndicator.textContent = 'STUDY TIME';
                 modeIndicator.classList.remove('break-mode');
                 timerDisplay.classList.remove('break-mode');
@@ -457,10 +446,32 @@
                 timerDisplay.classList.add('break-mode');
             }
         }
+        
+        function handleStartClick() {
+            const command = isRunning ? 'pause' : 'start';
+            isRunning = !isRunning;
+            startBtn.innerHTML = isRunning ? 'PAUSE' : 'RESUME';
 
+            timerWorker.postMessage({
+                command: command,
+                studyTime: parseInt(studyTimeInput.value),
+                breakTime: parseInt(breakTimeInput.value)
+            });
+        }
+
+        function resetTimer() {
+            isRunning = false;
+            startBtn.innerHTML = 'START';
+            timerWorker.postMessage({
+                command: 'reset',
+                studyTime: parseInt(studyTimeInput.value)
+            });
+            // The worker will post a message back to update the display
+        }
+        
+        // --- Sound and Settings Functions (Unchanged) ---
         function playSound(soundType) {
             const soundPath = soundType === 'study' ? studySoundInput.value : breakSoundInput.value;
-            
             if (soundPath && soundPath.trim() !== '') {
                 const audio = new Audio(soundPath);
                 audio.play().catch(e => {
@@ -481,127 +492,77 @@
             gainNode.connect(audioContext.destination);
             
             if (soundType === 'break') {
-                // Break sound: Pleasant chime-like sound (C-E-G chord)
-                const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5
-                const oscillators = [];
-                const gainNodes = [];
-                
+                const frequencies = [523.25, 659.25, 783.99];
                 frequencies.forEach((freq, index) => {
                     const osc = audioContext.createOscillator();
                     const gain = audioContext.createGain();
-                    
                     osc.connect(gain);
                     gain.connect(audioContext.destination);
-                    
                     osc.frequency.value = freq;
                     osc.type = 'sine';
-                    
                     gain.gain.setValueAtTime(0.15, audioContext.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.5);
-                    
                     osc.start(audioContext.currentTime + (index * 0.1));
                     osc.stop(audioContext.currentTime + 1.5);
-                    
-                    oscillators.push(osc);
-                    gainNodes.push(gain);
                 });
             } else {
-                // Study sound: Simple single beep
                 oscillator.frequency.value = 800;
                 oscillator.type = 'sine';
-                
                 gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.5);
             }
         }
 
-        function startTimer() {
-            if (isRunning) return;
-
-            isRunning = true;
-            startBtn.innerHTML = 'PAUSE';
-            const studyTime = parseInt(studyTimeInput.value) * 60;
-            const breakTime = parseInt(breakTimeInput.value) * 60;
-
-            if (totalSeconds === undefined) {
-                totalSeconds = isStudySession ? studyTime : breakTime;
-            }
-            
-            updateModeIndicator();
-            updateTimerDisplay();
-
-            timer = setInterval(() => {
-                if (totalSeconds <= 0) {
-                    clearInterval(timer);
-                    isRunning = false;
-
-                    // Play appropriate sound BEFORE switching sessions
-                    if (isStudySession) {
-                        // Study session just ended, break is starting
-                        playSound('break');
-                    } else {
-                        // Break session just ended, study is starting
-                        playSound('study');
-                    }
-                    
-                    // Switch to the next session type
-                    isStudySession = !isStudySession;
-
-                    setTimeout(() => {
-                        totalSeconds = undefined;
-                        startTimer();
-                    }, 1000);
-                } else {
-                    totalSeconds--;
-                    updateTimerDisplay();
-                }
-            }, 1000);
-        }
-        
-        function pauseTimer() {
-            clearInterval(timer);
-            isRunning = false;
-            startBtn.innerHTML = 'RESUME';
-        }
-        
-        function handleStartClick() {
-            if (isRunning) {
-                pauseTimer();
-            } else {
-                startTimer();
-            }
+        function loadSettings() {
+            const savedStudyTime = localStorage.getItem('pomodoro-study-time');
+            const savedBreakTime = localStorage.getItem('pomodoro-break-time');
+            if (savedStudyTime) studyTimeInput.value = savedStudyTime;
+            if (savedBreakTime) breakTimeInput.value = savedBreakTime;
         }
 
-        function resetTimer() {
-            clearInterval(timer);
-            isRunning = false;
-            isStudySession = true;
-            const studyTime = parseInt(studyTimeInput.value);
-            totalSeconds = studyTime * 60;
-            updateTimerDisplay();
-            updateModeIndicator();
-            startBtn.innerHTML = 'START';
+        function saveStudyTime() {
+            const studyTime = studyTimeInput.value;
+            localStorage.setItem('pomodoro-study-time', studyTime);
+            showSaveSuccess(saveStudyBtn);
+            if (!isRunning) resetTimer();
         }
 
-        // Event listeners
+        function saveBreakTime() {
+            const breakTime = breakTimeInput.value;
+            localStorage.setItem('pomodoro-break-time', breakTime);
+            showSaveSuccess(saveBreakBtn);
+            if (!isRunning) resetTimer();
+        }
+
+        function showSaveSuccess(button) {
+            button.classList.add('saved');
+            button.textContent = 'SAVED';
+            setTimeout(() => {
+                button.classList.remove('saved');
+                button.textContent = 'SAVE';
+            }, 1500);
+        }
+
+        // --- Event Listeners ---
         startBtn.addEventListener('click', handleStartClick);
         resetBtn.addEventListener('click', resetTimer);
         saveStudyBtn.addEventListener('click', saveStudyTime);
         saveBreakBtn.addEventListener('click', saveBreakTime);
-        
-        studyTimeInput.addEventListener('change', () => {
-            if (!isRunning) resetTimer();
-        });
-        breakTimeInput.addEventListener('change', () => {
-            if (!isRunning) resetTimer();
-        });
+        studyTimeInput.addEventListener('change', () => { if (!isRunning) resetTimer(); });
+        breakTimeInput.addEventListener('change', () => { if (!isRunning) resetTimer(); });
 
-        // Initialize on page load
-        loadSettings();
-        resetTimer();
+        // --- Initialize on Page Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeWorker();
+            loadSettings();
+            
+            // Set initial state without starting the timer
+            const initialStudyTime = parseInt(studyTimeInput.value) * 60;
+            updateTimerDisplay(initialStudyTime);
+            updateModeIndicator(true);
+        });
     </script>
 </body>
 </html>
